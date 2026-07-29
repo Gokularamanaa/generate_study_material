@@ -1,0 +1,20 @@
+# Environment files containing sensitive keys
+.env
+.env.local
+.env.*
+!.env.example
+
+# Python caches and build files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# Output folder for generated materials
+study_material/
+output/
+scratch/
