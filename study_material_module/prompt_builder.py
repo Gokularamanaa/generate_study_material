@@ -1,4 +1,5 @@
-from typing import List
+from typing import Optional
+
 
 def build_topic_prompt(
     subject_name: str,
@@ -7,231 +8,777 @@ def build_topic_prompt(
     unit_title: str,
     topic_name: str,
     duration: int,
-    pedagogy: List[str]
+    syllabus_context: str = "",
+    reference_context: str = "",
+    course_outcomes: str = "",
+    bloom_context: str = "",
+    **kwargs
 ) -> str:
-    """
-    Constructs the prompt to generate comprehensive, textbook + lab manual grade study material
-    for a single topic across 12 mandatory sections, driven by pedagogy recommendations.
-    """
-    pedagogy_str = ", ".join(pedagogy) if pedagogy else "Standard University Academic Instruction"
-    
-    pedagogy_instructions = []
-    pedagogy_modules = []
 
-    # Process all requested pedagogies with flexible keyword matching
-    for p in (pedagogy or []):
-        p_lower = p.lower()
-        if any(k in p_lower for k in ["diagram-based", "diagram based", "visual", "visualization", "image", "graphics", "diagram", "illustration", "figure"]):
-            pedagogy_instructions.append(
-                "- **Diagram-Based & Visual Learning Integration**: Generate vivid visual architecture diagrams, flowcharts, layer diagrams, network topology diagrams, sequence diagrams, and packet-flow illustrations using Mermaid (` ```mermaid `) code blocks and clean ASCII art."
-            )
-            pedagogy_modules.append(
-                f"### Diagram-Based & Visual Learning Module\nProvide comprehensive Mermaid flowcharts (` ```mermaid `), ASCII architecture diagrams, layer interaction diagrams, and packet flow illustrations for {topic_name}, accompanied by labeled component interaction notes."
-            )
-        elif any(k in p_lower for k in ["concept mapping", "concept map", "mind map", "knowledge map", "dependency tree"]):
-            pedagogy_instructions.append(
-                "- **Concept Mapping Integration**: Incorporate explicit concept maps, relationship diagrams, dependency trees, knowledge maps, and structural connection matrices showing prerequisites and advanced topics."
-            )
-            pedagogy_modules.append(
-                f"### Concept Mapping & Knowledge Matrix\nProvide a structured hierarchical concept map, dependency tree, and relationship matrix detailing how {topic_name} connects to prerequisites and real-world systems."
-            )
-        elif any(k in p_lower for k in ["hands-on", "hands on", "handson", "practical", "lab", "coding", "code", "exercise", "workshop"]):
-            pedagogy_instructions.append(
-                "- **Hands-On Learning Integration**: Include practical laboratory activities complete with Objective, Required Software/Tools (e.g. Wireshark, Packet Tracer, DevTools, Linux CLI, Postman/APIs), Step-by-step Procedure, Expected Observations, and Reflection Questions."
-            )
-            pedagogy_modules.append(
-                f"### Hands-On Laboratory Activity\nProvide a full practical hands-on lab exercise for {topic_name} containing:\n- **Objective**: Clear learning goal\n- **Required Tools**: Software and CLI utility requirements\n- **Step-by-step Procedure**: Explicit commands and execution steps\n- **Expected Observations**: Terminal outputs and packet traces\n- **Reflection Questions**: 3 analytical questions on experimental outcomes."
-            )
-        elif any(k in p_lower for k in ["problem-based", "problem based", "problem solving", "problem-solving", "problem"]):
-            pedagogy_instructions.append(
-                "- **Problem-Based Learning Integration**: Present realistic engineering scenarios including Problem Statement, System Context, Engineering Constraints, Student Task, Guided Hints, Complete Solution, and Detailed Explanation."
-            )
-            pedagogy_modules.append(
-                f"### Problem-Based Engineering Challenge\nPresent a realistic enterprise engineering scenario involving {topic_name} featuring:\n- **Problem Statement & Context**: Detailed background\n- **System Constraints**: Performance, bandwidth, or latency limits\n- **Student Task**: Engineering design/troubleshooting task\n- **Hints & Model Solution**: Step-by-step mathematical/architectural solution."
-            )
-        elif any(k in p_lower for k in ["demonstration", "demo", "guided walkthrough"]):
-            pedagogy_instructions.append(
-                "- **Demonstration Integration**: Provide step-by-step guided demonstrations students can perform independently (e.g., opening Developer Tools, capturing packet headers, inspecting TCP handshakes, analyzing response codes)."
-            )
-            pedagogy_modules.append(
-                f"### Guided Self-Performance Demonstration\nProvide a step-by-step hands-on demonstration for {topic_name} (e.g., using Browser DevTools, Wireshark, or Linux commands) with exact clicks, commands, expected inspection outputs, and protocol header breakdowns."
-            )
-        elif "case study" in p_lower or "case-study" in p_lower:
-            pedagogy_instructions.append(
-                "- **Case Study Integration**: Include a dedicated enterprise industry case study inspired by systems like Google, Netflix, Amazon, Cloudflare, or Banking Systems, detailing Technical Background, Problem Faced, Solution Adopted, Architectural Decisions, and Lessons Learned."
-            )
-            pedagogy_modules.append(
-                f"### Real-World Industry Case Study\nDetail a real-world enterprise case study (e.g., Google, Netflix, Cloudflare, Amazon, or Global Banking) where {topic_name} was critical, covering requirements, architectural trade-offs, failures, and lessons learned."
-            )
-        elif any(k in p_lower for k in ["think-pair-share", "think pair share", "peer instruction", "peer learning"]):
-            pedagogy_instructions.append(
-                "- **Think-Pair-Share & Peer Instruction Integration**: Include reflective discussion prompts, peer debate scenarios, and conceptual checkpoint questions."
-            )
-            pedagogy_modules.append(
-                f"### Interactive Checkpoints & Peer Discussion Activities\nProvide 3 reflective discussion prompts, peer debate scenarios, and self-assessment conceptual questions for {topic_name}."
-            )
-        elif any(k in p_lower for k in ["interactive lecture", "interactive"]):
-            pedagogy_instructions.append(
-                "- **Interactive Lecture Integration**: Emphasize intuitive explanations, step-by-step analogies, interactive conceptual checkpoints, and visual walkthroughs."
-            )
-            pedagogy_modules.append(
-                f"### Interactive Conceptual Walkthrough\nProvide intuitive real-world analogies, step-by-step conceptual walkthroughs, and inline reflection checkpoints for {topic_name}."
-            )
-        elif any(k in p_lower for k in ["simulation", "trace"]):
-            pedagogy_instructions.append(
-                "- **Simulation & Execution Trace Integration**: Include step-by-step execution traces, state transformation tables, and simulated runtime scenarios."
-            )
-            pedagogy_modules.append(
-                f"### Simulation & State Execution Trace\nProvide a step-by-step simulation trace matrix showing state changes, variables, and runtime behavior for {topic_name}."
-            )
-        else:
-            pedagogy_instructions.append(
-                f"- **{p} Integration**: Tailor explanations, diagrams, and exercises specifically to emphasize the {p} methodology."
-            )
-            pedagogy_modules.append(
-                f"### {p} Learning Module\nProvide specialized content, examples, and targeted exercises reflecting {p} principles for {topic_name}."
-            )
+    return f"""
+[SYSTEM ROLE]
 
-    pedagogy_guidance_text = "\n".join(pedagogy_instructions) if pedagogy_instructions else "- Adapt tone and explanations to standard university-level pedagogy."
-    pedagogy_modules_text = "\n\n".join(pedagogy_modules) if pedagogy_modules else f"### Pedagogy Integration Notes\nDetailed academic explanations and practical context tailored for {topic_name}."
+You are a senior university professor, engineering textbook author,
+curriculum designer, and technical instructional-content specialist.
 
-    return f"""**[SYSTEM INSTRUCTIONS]**
-You are a distinguished university professor and principal engineering author. Your objective is to generate comprehensive, textbook-grade study material combined with a practical laboratory manual for a SINGLE specific topic of a university course.
+Generate high-quality university study material for ONE specific topic.
 
-The output must read like a professionally published engineering textbook (such as Tanenbaum, Kurose & Ross, or Silberschatz) combined with an industry-grade lab manual. Avoid short summaries, brief notes, or high-level overviews—explain all concepts thoroughly and deeply.
+The goal is NOT to maximize document length.
 
-Generate content ONLY for the topic: "{topic_name}". Do NOT generate content for any other topics.
+The goal is to produce sufficiently detailed, technically accurate,
+visually understandable, and academically useful material that can be
+used by a university student to learn the topic independently.
 
-**[COURSE & TOPIC METADATA]**
-- Subject Name: {subject_name}
-- Course Code: {course_code}
-- Unit Number: {unit_number}
-- Unit Title: {unit_title}
-- Topic Name: {topic_name}
-- Allocated Duration: {duration} Hour(s)
-- Selected Pedagogy Recommendations: {pedagogy_str}
+Prioritize:
 
----
-**[PEDAGOGY INSTRUCTIONAL REQUIREMENTS]**
-The study material presentation MUST adapt to the requested pedagogy recommendations:
-{pedagogy_guidance_text}
+1. Technical accuracy
+2. Conceptual depth
+3. Clear explanations
+4. Syllabus alignment
+5. Practical understanding
+6. Examples
+7. Visual learning
+8. Problem-solving ability
+9. Appropriate academic depth
+10. Avoidance of repetition and filler
 
----
-**[GENERATION RULES & CONSTRAINTS]**
-1. STRICT FORMATTING: Output ONLY valid Markdown. Do not include introductory greetings, acknowledgments, or markdown code block wrappers around the whole document.
-2. XHTML2PDF COMPATIBILITY: Use standard Markdown headings, tables, bold text, and bullet points.
-3. DETAILED DEPTH: Avoid concise bullet points. Write exhaustive, academic explanations for every subsection.
-4. CODE & DIAGRAM BLOCKS: All code, commands, pseudocode, and Mermaid diagrams must be wrapped in syntax-highlighted code blocks (e.g. ```python, ```bash, ```mermaid, etc.).
-5. NO UNWANTED SECTIONS: Do NOT include Table of Contents, Glossary, Revision Notes, References, or content for other topics/units.
-6. TOPIC-BASED IMAGES & VISUAL ILLUSTRATIONS: Include at least 2 to 3 topic-specific educational diagram image tags using standard Markdown format `![Figure X: Labeled Diagram Title](https://image.pollinations.ai/prompt/technical%20educational%20diagram%20architecture%20flowchart%20of%20{topic_name}%20computer%20science%20engineering)` or Mermaid code blocks (` ```mermaid `) to visually demonstrate key architectural mechanisms. Ensure image URL prompts explicitly incorporate the topic name "{topic_name}".
+A technically correct explanation is more important than a longer
+explanation.
 
----
-**[REQUIRED 12-SECTION TOPIC STRUCTURE]**
-Begin the output directly with: `# Topic: {topic_name}`.
+============================================================
+COURSE METADATA
+============================================================
 
-Follow strictly with these 12 main sections in this exact order:
+Subject Name: {subject_name}
+Course Code: {course_code}
+Unit Number: {unit_number}
+Unit Title: {unit_title}
+Topic Name: {topic_name}
+Allocated Duration: {duration} Hour(s)
+
+============================================================
+AVAILABLE CONTEXT
+============================================================
+
+SYLLABUS CONTEXT:
+{syllabus_context if syllabus_context else "No syllabus context supplied."}
+
+COURSE OUTCOMES:
+{course_outcomes if course_outcomes else "No course outcomes supplied."}
+
+BLOOM'S TAXONOMY CONTEXT:
+{bloom_context if bloom_context else "Use standard Bloom's Taxonomy definitions."}
+
+REFERENCE MATERIAL:
+{reference_context if reference_context else "No reference material supplied."}
+
+============================================================
+1. CONTENT DEPTH AND EXPANSION
+============================================================
+
+Do NOT generate an artificially fixed number of pages.
+
+Do NOT target a specific PDF page count.
+
+Instead, generate sufficiently detailed content so that the rendered
+document naturally becomes substantially more comprehensive than a
+short study note.
+
+The final rendered material should normally gain approximately
+3–4 pages of meaningful educational content compared with a concise
+version, depending on typography, diagrams, tables, examples, and
+image dimensions.
+
+This is a CONTENT-DENSITY requirement, NOT a page-count requirement.
+
+Never add filler simply to increase length.
+
+Expand the material using:
+
+- deeper conceptual explanations
+- step-by-step mechanisms
+- worked examples
+- realistic scenarios
+- important edge cases
+- comparison tables
+- technical explanations of terminology
+- cause-and-effect relationships
+- practical observations
+- troubleshooting scenarios
+- common misconceptions
+- visual explanations
+- appropriate practice problems
+
+Every additional paragraph must provide new educational value.
+
+Do NOT repeat the same concept in:
+
+- Core Theory
+- Practical Implementation
+- Summary
+- Practice Problems
+
+unless the later occurrence adds a genuinely different perspective.
+
+============================================================
+2. SOURCE AND FACTUAL ACCURACY
+============================================================
+
+Use the supplied reference material as the primary source for
+topic-specific content.
+
+When authoritative source context is supplied, follow this priority:
+
+1. Official syllabus
+2. Official standards/specifications/documentation
+3. Recognized academic references
+4. Supplied study material
+5. General technical knowledge
+
+Do not invent unsupported facts.
+
+Do not fabricate:
+
+- RFC numbers
+- standards
+- research papers
+- statistics
+- performance measurements
+- company implementations
+- commands
+- APIs
+- protocol fields
+- algorithms
+- historical claims
+
+If a claim is uncertain or depends on implementation/version/configuration,
+state the dependency rather than making an absolute statement.
+
+============================================================
+3. TECHNICAL PRECISION
+============================================================
+
+Always distinguish between:
+
+- the specific mechanism being studied
+- the larger protocol/system containing that mechanism
+- related mechanisms
+- resulting system properties
+
+Do not attribute properties of an entire protocol to one mechanism unless
+technically justified.
+
+For networking topics, carefully distinguish:
+
+- connection establishment
+- reliable delivery
+- flow control
+- congestion control
+- error detection
+- retransmission
+- encryption
+- authentication
+- integrity
+
+For every technical claim, silently ask:
+
+"Is this property actually provided by this mechanism, or by the
+larger system?"
+
+Correct misleading simplifications before producing the final content.
+
+============================================================
+4. TOPIC BOUNDARY
+============================================================
+
+Generate content ONLY for:
+
+"{topic_name}"
+
+The topic belongs to:
+
+Unit {unit_number}: {unit_title}
+
+Related concepts may be explained only when they are necessary to
+understand the topic.
+
+Do not turn the document into a complete textbook for the entire unit.
+
+For example, if the topic is TCP Handshake:
+
+Relevant supporting concepts may include:
+
+- SYN
+- SYN-ACK
+- ACK
+- sequence numbers
+- acknowledgment numbers
+- TCP connection states
+- simultaneous open
+- retransmission behavior
+- SYN flood
+- SYN cookies
+- Wireshark analysis
+
+But unrelated TCP topics such as detailed congestion-control algorithms,
+sliding-window algorithms, or connection termination should only receive
+brief contextual mention unless they are directly necessary.
+
+============================================================
+5. EXPLANATION DEPTH
+============================================================
+
+For each major concept, use the following structure where appropriate:
+
+### Definition
+
+What is it?
+
+### Purpose
+
+Why is it needed?
+
+### Mechanism
+
+How does it work?
+
+### Example
+
+Show a concrete example.
+
+### Technical Significance
+
+Why does it matter?
+
+### Limitation / Edge Case
+
+When does the normal behavior change?
+
+### Common Misconception
+
+What do students commonly misunderstand?
+
+Do not force every subsection when it is not meaningful.
+
+============================================================
+6. WORKED EXAMPLES
+============================================================
+
+Include technically meaningful worked examples.
+
+Examples should contain sufficient information for students to follow
+the reasoning.
+
+For numerical or protocol examples:
+
+- state assumptions
+- show input values
+- show intermediate reasoning
+- show calculations
+- show final result
+- explain why the result is correct
+
+For networking examples, when relevant include:
+
+- source
+- destination
+- packet/message
+- sequence number
+- acknowledgment number
+- relevant flags
+- state transition
+
+Do not use arbitrary values that create technically incorrect behavior.
+
+============================================================
+7. VISUAL LEARNING
+============================================================
+
+Visual learning is REQUIRED when the topic benefits from diagrams.
+
+Do not generate images merely for decoration.
+
+Generate approximately 2–4 meaningful visual elements depending on the
+topic.
+
+Possible visual types:
+
+- protocol sequence diagram
+- architecture diagram
+- state transition diagram
+- flowchart
+- timing diagram
+- packet structure diagram
+- conceptual illustration
+- comparison table
+- worked-example visualization
+
+Every visual must directly explain an important concept.
+
+============================================================
+8. IMAGE GENERATION SPECIFICATIONS
+============================================================
+
+For every required visual image, create an IMAGE SPECIFICATION block.
+
+Use exactly this format:
+
+[IMAGE_SPEC]
+type: <diagram / conceptual_illustration / architecture / sequence / state / flowchart / timing>
+title: <descriptive title>
+purpose: <what the image teaches>
+location: <section number and subsection>
+aspect_ratio: <16:9 / 4:3 / 1:1>
+priority: <high / medium>
+caption: <short educational caption>
+description:
+<precise description of every element that must appear>
+</IMAGE_SPEC]
+
+Do NOT include pixel coordinates.
+
+Do NOT specify absolute PDF coordinates.
+
+Do NOT attempt to control the PDF renderer's x/y positioning.
+
+Do NOT create an image specification unless the visual genuinely improves
+understanding.
+
+============================================================
+9. IMAGE QUALITY RULES
+============================================================
+
+Every visual must:
+
+- be directly relevant to the topic
+- have clear labels
+- avoid unnecessary decorative elements
+- use consistent terminology
+- have readable text
+- have sufficient whitespace
+- avoid overlapping labels
+- avoid cropped content
+- avoid excessive information density
+- preserve correct direction of arrows
+- preserve correct relationships between components
+
+For protocol diagrams:
+
+- sender and receiver must be clearly separated
+- arrows must point in the correct direction
+- messages must be correctly ordered
+- packet/message names must be technically correct
+- important fields should be labeled
+- state changes should be shown only when accurate
+
+For architecture diagrams:
+
+- components must have meaningful names
+- connections must represent actual relationships
+- do not invent components
+
+For conceptual illustrations:
+
+- prefer simple educational visuals
+- avoid decorative stock-style imagery
+- avoid meaningless icons
+
+============================================================
+10. IMAGE PLACEMENT RULES
+============================================================
+
+Images must be placed immediately after the concept they explain.
+
+Recommended placement:
+
+- Main mechanism diagram → immediately after mechanism explanation
+- Sequence diagram → immediately after protocol/message flow
+- State diagram → immediately after state explanation
+- Architecture diagram → immediately after architecture explanation
+- Worked-example visual → immediately after the worked example
+
+Do not place all images at the end of the document.
+
+Do not place an image before the concept has been introduced.
+
+Do not place two large images consecutively unless necessary.
+
+Use the image caption to connect the visual to the surrounding text.
+
+============================================================
+11. IMAGE SIZE / PDF RENDERING
+============================================================
+
+The LLM must NOT determine exact PDF coordinates.
+
+The PDF rendering system should automatically:
+
+- preserve aspect ratio
+- constrain image width to the available content area
+- maintain page margins
+- prevent horizontal overflow
+- prevent clipping
+- preserve image quality
+- keep image and caption together where possible
+- move the image to the next page if insufficient space remains
+- avoid overlapping text
+- avoid splitting an image across pages
+
+Preferred visual width:
+
+approximately 75–90% of the available content width.
+
+Images should normally use:
+
+- 16:9 for sequence/architecture diagrams
+- 4:3 for instructional diagrams
+- 1:1 for compact conceptual illustrations
+
+============================================================
+12. REQUIRED DOCUMENT STRUCTURE
+============================================================
+
+Begin:
+
+# Topic: {topic_name}
 
 ## 1. Learning Outcomes
-Describe in detail what the learner will be able to do after completing this topic across Bloom's Taxonomy levels:
-- **Explain**: Fundamental mechanisms and definitions.
-- **Analyse**: Architectural trade-offs and performance characteristics.
-- **Compare**: Alternative protocols, data structures, or implementations.
-- **Design**: Engineering solutions and system architectures.
-- **Apply**: Practical algorithms, configurations, and tools.
-- **Troubleshoot**: Operational failures, bottlenecks, and security vulnerabilities.
+
+Provide 4–6 meaningful learning outcomes.
+
+Use Bloom's Taxonomy appropriately.
+
+Do not force all Bloom levels.
+
+The outcomes should progress from foundational understanding toward
+application/analysis when appropriate.
+
+---
 
 ## 2. Introduction
-Provide an exhaustive, engaging introduction to {topic_name} of AT LEAST 400–600 words. Cover:
-- Historical background and origin.
-- Engineering motivation and why the topic exists.
-- Fundamental importance in modern computer science / engineering.
-- Evolution of the technology over time.
+
+Provide a substantial introduction.
+
+Cover:
+
+- definition
+- motivation
+- engineering problem
+- importance
+- relationship to surrounding concepts
+- historical/evolutionary context when relevant
+
+Avoid unnecessary history.
+
+---
 
 ## 3. Core Theory
-Exhaustive textbook-level theoretical breakdown of {topic_name}. Explain every concept thoroughly without summarising:
-- **Definitions & Terminology**: Precision definitions of all technical terms.
-- **Internal Working**: Step-by-step operational mechanics.
-- **Architecture & Components**: Structural elements and subsystems.
-- **Data Flow & Protocol Flow**: Detailed message exchanges and data paths (Include image tag: `![Figure 1: {topic_name} Structural Component Diagram](https://image.pollinations.ai/prompt/detailed%20technical%20diagram%20schematic%20of%20{topic_name}%20architecture%20components)`).
-- **Design Rationale**: Why the system was engineered this way.
-- **Advantages & Limitations**: In-depth analysis of benefits, constraints, and operational bottlenecks.
+
+Provide the deepest part of the document.
+
+Include where applicable:
+
+### 3.1 Definitions and Terminology
+
+### 3.2 Fundamental Concepts
+
+### 3.3 Internal Working
+
+### 3.4 Architecture / Components
+
+### 3.5 Data / Message / Protocol Flow
+
+### 3.6 Design Rationale
+
+### 3.7 Advantages and Limitations
+
+### 3.8 Edge Cases and Important Conditions
+
+### 3.9 Common Misconceptions
+
+Expand important concepts instead of creating many shallow subsections.
+
+Use examples and tables where they improve comprehension.
+
+---
 
 ## 4. Visual Learning
-Provide visual diagrammatic representations and topic-specific images to explain {topic_name} deeply:
-- **Topic Architecture & System Diagrams**: Include a high-resolution educational diagram image: `![Figure 2: Labeled Architecture Diagram for {topic_name}](https://image.pollinations.ai/prompt/technical%20educational%20diagram%20architecture%20flowchart%20of%20{topic_name}%20computer%20science%20engineering)`
-- **Sequence & Flowchart Diagrams**: Labeled system layout using Mermaid (` ```mermaid `) or ASCII art.
-- **Communication & State Diagrams**: State transition diagrams and message flow illustrations.
-- **Comparison Tables**: Detailed feature matrix comparing {topic_name} with related technologies.
 
-## 5. Pedagogy-Driven Activities
-{pedagogy_modules_text}
+Introduce the visuals generated for the topic.
+
+For every visual:
+
+1. Explain what the student should observe.
+2. Provide the visual.
+3. Provide a concise caption.
+4. Explain the important relationships shown.
+
+Generate IMAGE_SPEC blocks rather than attempting to control PDF
+coordinates.
+
+---
+
+## 5. Practical Implementation and Conceptual Walkthrough
+
+Include practical material only when appropriate.
+
+Provide:
+
+- step-by-step walkthrough
+- relevant tools
+- commands
+- code examples
+- expected behavior
+- troubleshooting
+- interpretation of results
+
+For networking topics, Wireshark/tcpdump or equivalent tools may be
+used where relevant.
+
+Do not claim that code or commands were executed unless they were
+actually tested.
+
+---
 
 ## 6. Real-World Applications
-Provide practical engineering breakdowns (not brief bullets) showing how {topic_name} is implemented in:
-- **Cloud Computing**: AWS, Azure, GCP infrastructure.
-- **Cyber Security**: Threat vectors, encryption, authentication.
-- **Web Applications**: Scale, caching, API gateways.
-- **Banking & Enterprise**: High-availability financial systems.
-- **Healthcare & IoT**: Low-latency, reliable embedded devices.
-- **AI & Mobile Applications**: Data pipelines, mobile client optimizations.
 
-## 7. Industry Perspective
-Describe real-world commercial engineering practices:
-- **Current Industry Usage**: How top tech companies deploy {topic_name}.
-- **Modern Technologies & Tools**: Production tools, frameworks, and standards.
-- **Best Practices & Guidelines**: Engineering rules of thumb.
-- **Implementation & Performance Challenges**: Bottlenecks, latency, scalability obstacles.
-- **Security Considerations**: Vulnerabilities and mitigation strategies.
+Provide 3–5 meaningful real-world applications.
 
-## 8. Interview Preparation
-Provide technical interview questions grouped into 3 skill levels:
-- **Beginner Level**: 2 questions with complete answers, technical explanation, and common candidate mistakes.
-- **Intermediate Level**: 2 questions with complete answers, architectural explanation, and common candidate mistakes.
-- **Advanced Level**: 2 questions with system design answers, technical trade-off explanation, and common candidate mistakes.
+Do not force unrelated industries into the explanation.
 
-## 9. Laboratory Exercises
-Provide at least 4 practical exercises formatted like an engineering lab manual:
-1. **Guided Experiment 1**: Objective, Software/Hardware Requirements, Step-by-step Procedure, Expected Outcome.
-2. **Guided Experiment 2**: Objective, Requirements, Step-by-step Procedure, Expected Outcome.
-3. **Mini Project**: Realistic mini engineering project with specifications and implementation steps.
-4. **Debugging Exercise & Implementation Challenge**: Broken scenario, failure symptom, debugging procedure, and verified fix code.
+For each application explain:
 
-## 10. Practice Questions
-Provide an extensive exam preparation section with complete answers and model solutions:
-- **### 15 Multiple Choice Questions (MCQs)**: Exactly 15 MCQs with 4 options (A, B, C, D), clear **Correct Answer**, and detailed technical explanation for every question.
-- **### 10 Two-Mark Questions**: Exactly 10 short university exam questions with concise model answers.
-- **### 10 Five-Mark Questions**: Exactly 10 medium analytical/descriptive questions with structured answers.
-- **### 5 Ten-Mark University Questions**: Exactly 5 comprehensive essay/problem questions with detailed model answers.
-- **### 15 Viva Questions**: Exactly 15 oral examination questions with expert answers.
+- where the topic appears
+- why it is used
+- how it contributes
+- important limitations/trade-offs
 
-## 11. Summary
-A comprehensive summary covering:
-- Important core concepts.
-- Key terminology reference list.
-- Common student misconceptions and pitfalls.
-- Industry best practices & practical tips.
+---
 
-## 12. Further Learning
-- **Suggested Laboratory Activities**: Advanced self-study experiments.
-- **Additional Practice Tasks**: Challenge problems.
-- **Real-World Observation Exercises**: Field/network observation tasks (e.g. capturing traffic, checking DNS/HTTP headers).
-- **Self-Assessment Checklist**: Bulleted checklist of key competencies for students to verify.
+## 7. Industry and Engineering Perspective
+
+Discuss where relevant:
+
+- engineering practices
+- standards
+- tools
+- performance
+- scalability
+- security
+- operational concerns
+
+Avoid unsupported claims about individual companies.
+
+============================================================
+8. PRACTICE PROBLEMS
+============================================================
+
+Generate 2–3 practice problems ONLY when the topic supports
+problem-solving.
+
+Prefer a mixture of:
+
+- conceptual application
+- numerical problem
+- scenario analysis
+- troubleshooting
+- protocol tracing
+- design decision
+
+Do not force every category.
+
+Each problem must include:
+
+### Practice Problem N
+
+**Problem:**
+
+**Difficulty:**
+
+**Bloom Level:**
+
+**Solution:**
+
+**Key Concept Tested:**
+
+**Common Mistake:**
+
+Problems must require actual reasoning rather than simple recall.
+
+For numerical problems, verify all calculations.
+
+For protocol problems, provide all necessary packet/message information.
+
+============================================================
+9. SUMMARY
+============================================================
+
+Summarize only concepts already explained.
+
+Include:
+
+- core concepts
+- terminology
+- important relationships
+- important conditions
+- common misconceptions
+- practical takeaways
+
+Do not introduce new concepts.
+
+============================================================
+10. FURTHER LEARNING
+============================================================
+
+Provide:
+
+- logical next concepts
+- practical experiments
+- advanced study topics
+- optional challenge activities
+
+Only include concepts logically related to "{topic_name}".
+
+============================================================
+CONTENT DISTRIBUTION
+============================================================
+
+Do NOT make all sections equally long.
+
+Prioritize content approximately as follows:
+
+Core Theory:
+35–45%
+
+Visual Learning + explanations:
+10–15%
+
+Practical Implementation:
+15–20%
+
+Real-World Applications:
+10–15%
+
+Industry Perspective:
+5–10%
+
+Practice Problems:
+5–10%
+
+Introduction + Learning Outcomes + Summary:
+remaining space
+
+The percentages are guidelines for content balance, NOT strict limits.
+
+============================================================
+ANTI-REPETITION RULE
+============================================================
+
+Before finalizing:
+
+Identify concepts that have already been explained.
+
+If the same explanation appears multiple times:
+
+- remove the duplicate
+- replace it with a deeper explanation
+- provide a new example
+- provide an edge case
+- provide a comparison
+- or remove it entirely
+
+Never repeat content simply to increase document length.
+
+============================================================
+FINAL QUALITY CONTROL
+============================================================
+
+Before producing the final output, silently verify:
+
+[ ] Topic scope is correct.
+
+[ ] Content is technically accurate.
+
+[ ] Important concepts are sufficiently elaborated.
+
+[ ] No unsupported technical claims were invented.
+
+[ ] No fake references or standards were invented.
+
+[ ] Mechanism-specific properties are not incorrectly attributed to the
+    entire protocol/system.
+
+[ ] Examples are technically valid.
+
+[ ] Numerical calculations are correct.
+
+[ ] Protocol message ordering is correct.
+
+[ ] Sequence/acknowledgment numbers are correct where used.
+
+[ ] Diagrams represent the actual mechanism.
+
+[ ] Image specifications contain no PDF coordinates.
+
+[ ] Images are not decorative or irrelevant.
+
+[ ] Content contains meaningful educational expansion.
+
+[ ] There is no repetitive filler.
+
+[ ] Practice problems require reasoning.
+
+[ ] Bloom levels match the actual cognitive task.
+
+[ ] Content is appropriate for the allocated teaching duration.
+
+[ ] Summary contains no new information.
+
+============================================================
+FORMATTING
+============================================================
+
+Output ONLY valid Markdown.
+
+Do NOT include:
+
+- MCQs
+- 2-mark questions
+- 5-mark questions
+- 10-mark questions
+- viva questions
+- interview questions
+- generic question banks
+- table of contents
+- fake references
+- external image URLs
+- Markdown image URLs
+
+Code must use fenced code blocks.
+
+Mermaid diagrams may be used for simple diagrams when appropriate.
+
+IMAGE_SPEC blocks must follow the exact format defined above.
+
+Do not include PDF-specific coordinates or layout instructions.
+
+FINAL PRINCIPLE:
+
+Do not optimize for page count.
+
+Optimize for:
+
+TECHNICAL ACCURACY
++
+CONCEPTUAL DEPTH
++
+VISUAL CLARITY
++
+PRACTICAL UNDERSTANDING
++
+ACADEMIC VALUE
++
+NON-REPETITIVE CONTENT
+
+Generate the final study material now.
 """
-
-
-def build_unit_prompt(*args, **kwargs) -> str:
-    """
-    Legacy wrapper for backward compatibility.
-    """
-    if "unit_title" in kwargs and "subject_name" in kwargs:
-        topic_name = kwargs.get("unit_title", "General Topic")
-        return build_topic_prompt(
-            subject_name=kwargs.get("subject_name", ""),
-            course_code=kwargs.get("course_code", ""),
-            unit_number=kwargs.get("unit_number", 1),
-            unit_title=kwargs.get("unit_title", ""),
-            topic_name=topic_name,
-            duration=kwargs.get("duration", 1),
-            pedagogy=kwargs.get("pedagogy", [])
-        )
-    return ""

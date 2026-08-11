@@ -315,366 +315,179 @@ def remove_unwanted_sections(md_content: str) -> str:
 
 def generate_simple_labeled_diagram_svg(title: str, topic_name: str = "") -> str:
     """
-    Generates a clean, simple, highly visible, and explicitly labeled educational vector SVG diagram.
-    Uses high-contrast white background, crisp component boxes, labeled arrows, and bold readable text.
-    Guarantees 100% explicit labels for all components, fields, and states.
+    Generates a clean, simple, highly visible, and explicitly topic-tailored educational vector SVG diagram.
+    Guarantees 100% topic-specific visual diagrams without duplicate or hardcoded static TCP templates.
     """
-    clean_title = html.escape(title or "Technical Diagram")
-    clean_topic = html.escape(topic_name or "Protocol").strip()
+    clean_title = html.escape(title or "Technical Diagram").strip()
+    clean_topic = html.escape(topic_name or "Topic Architecture").strip()
     topic_upper = clean_topic.upper()
-    title_lower = clean_title.lower()
-    topic_lower = clean_topic.lower()
-    combined_text = f"{title_lower} {topic_lower}"
+    title_upper = clean_title.upper()
+    combined_text = f"{clean_title.lower()} {clean_topic.lower()}"
 
-    # Determine diagram archetype based on title & topic keywords
-    is_sequence = any(k in combined_text for k in ("sequence", "handshake", "flow", "communication", "interaction", "exchange", "transmission"))
-    is_header = any(k in combined_text for k in ("header", "format", "packet", "segment", "datagram", "frame", "field", "bit"))
-    is_component = any(k in combined_text for k in ("component", "structural", "internal", "buffer", "engine", "reassembler", "segmenter"))
-    is_concept = any(k in combined_text for k in ("concept", "map", "matrix", "dependency", "tree", "knowledge", "relationship"))
-    is_state = any(k in combined_text for k in ("state", "transition", "fsm", "machine", "status", "lifecycle"))
-    is_architecture = any(k in combined_text for k in ("architecture", "layer", "stack", "tier", "overview"))
-
-    if is_sequence:
+    # 1. Ethernet Specific Diagram
+    if "ethernet" in combined_text:
         svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="310" viewBox="0 0 680 310">
-            <!-- Canvas Base -->
             <rect width="680" height="310" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
-            
-            <!-- Header Bar -->
-            <rect width="680" height="42" fill="#1e3a8a" rx="8"/>
-            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">SEQUENCE &amp; PROTOCOL FLOW: {topic_upper}</text>
-
-            <!-- Node 1: Client/Sender -->
-            <rect x="50" y="55" width="170" height="40" fill="#1e293b" rx="6"/>
-            <text x="135" y="80" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8" text-anchor="middle">CLIENT / SENDER (TX)</text>
-
-            <!-- Node 2: Server/Receiver -->
-            <rect x="460" y="55" width="170" height="40" fill="#0f766e" rx="6"/>
-            <text x="545" y="80" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">SERVER / RECEIVER (RX)</text>
-
-            <!-- Vertical Lifelines -->
-            <line x1="135" y1="95" x2="135" y2="265" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,5"/>
-            <line x1="545" y1="95" x2="545" y2="265" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,5"/>
-
-            <!-- Arrow 1: Connection Request -->
-            <line x1="140" y1="125" x2="535" y2="125" stroke="#0284c7" stroke-width="2.5"/>
-            <polygon points="540,125 530,119 530,131" fill="#0284c7"/>
-            <rect x="210" y="110" width="260" height="24" fill="#e0f2fe" rx="4" stroke="#0284c7" stroke-width="1.5"/>
-            <text x="340" y="126" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#0369a1" text-anchor="middle">Step 1: Connection Request (SYN, Seq=X)</text>
-
-            <!-- Arrow 2: Response & ACK -->
-            <line x1="540" y1="170" x2="145" y2="170" stroke="#0d9488" stroke-width="2.5"/>
-            <polygon points="140,170 150,164 150,176" fill="#0d9488"/>
-            <rect x="200" y="155" width="280" height="24" fill="#ccfbf1" rx="4" stroke="#0d9488" stroke-width="1.5"/>
-            <text x="340" y="171" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#0f766e" text-anchor="middle">Step 2: Response &amp; ACK (SYN-ACK, Ack=X+1)</text>
-
-            <!-- Arrow 3: Established Data Transfer -->
-            <line x1="140" y1="215" x2="535" y2="215" stroke="#16a34a" stroke-width="2.5"/>
-            <polygon points="540,215 530,209 530,221" fill="#16a34a"/>
-            <rect x="200" y="200" width="280" height="24" fill="#dcfce7" rx="4" stroke="#16a34a" stroke-width="1.5"/>
-            <text x="340" y="216" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#15803d" text-anchor="middle">Step 3: Established Data Transfer (ACK, Payload)</text>
-
-            <!-- Footer Badge -->
-            <rect x="150" y="260" width="380" height="24" fill="#f1f5f9" rx="4" stroke="#cbd5e1"/>
-            <text x="340" y="276" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">Connection State: Active Full-Duplex Data Transmission</text>
-        </svg>'''
-
-    elif is_header:
-        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="295" viewBox="0 0 680 295">
-            <!-- Canvas Base -->
-            <rect width="680" height="295" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
-            
-            <!-- Header Bar -->
             <rect width="680" height="42" fill="#0f766e" rx="8"/>
-            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">PACKET HEADER &amp; FIELD FORMAT: {topic_upper}</text>
+            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">ETHERNET FRAME FORMAT &amp; SWITCHED LAN TOPOLOGY</text>
 
-            <!-- Bit Position Labels -->
-            <text x="40" y="60" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#475569">Bit 0</text>
-            <text x="340" y="60" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#475569" text-anchor="middle">Bit 16</text>
-            <text x="640" y="60" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#475569" text-anchor="end">Bit 31</text>
-
-            <!-- Row 1: Source & Dest Port -->
-            <rect x="40" y="68" width="295" height="38" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5" rx="4"/>
-            <text x="187" y="91" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Source Port Number (16 Bits)</text>
-            <text x="187" y="102" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#0284c7" text-anchor="middle">[Sending Process Identifier]</text>
-
-            <rect x="345" y="68" width="295" height="38" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5" rx="4"/>
-            <text x="492" y="91" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">Destination Port Number (16 Bits)</text>
-            <text x="492" y="102" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#0284c7" text-anchor="middle">[Receiving Process Identifier]</text>
-
-            <!-- Row 2: Sequence Number -->
-            <rect x="40" y="112" width="600" height="38" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5" rx="4"/>
-            <text x="340" y="133" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#0f766e" text-anchor="middle">Sequence Number (32 Bits)</text>
-            <text x="340" y="145" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#0d9488" text-anchor="middle">[In-Order Packet Sequence &amp; Reassembly Control]</text>
-
-            <!-- Row 3: Checksum & Length -->
-            <rect x="40" y="156" width="295" height="38" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" rx="4"/>
-            <text x="187" y="177" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">Segment / Packet Length (16 Bits)</text>
-            <text x="187" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#d97706" text-anchor="middle">[Header + Data Byte Count]</text>
-
-            <rect x="345" y="156" width="295" height="38" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" rx="4"/>
-            <text x="492" y="177" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">Header &amp; Data Checksum (16 Bits)</text>
-            <text x="492" y="189" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#d97706" text-anchor="middle">[Error Detection &amp; Integrity Verification]</text>
-
-            <!-- Row 4: Payload -->
-            <rect x="40" y="200" width="600" height="42" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" rx="4"/>
-            <text x="340" y="222" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#334155" text-anchor="middle">Application Data Payload (Variable Length)</text>
-            <text x="340" y="235" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#64748b" text-anchor="middle">[User Application Messages, Encrypted Data Stream, or Raw Datagram]</text>
-
-            <!-- Footer Note -->
-            <text x="340" y="275" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#475569" text-anchor="middle">Explicit Field Breakdown: Colors indicate Header Control vs Data Payload</text>
-        </svg>'''
-
-    elif is_component:
-        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="300" viewBox="0 0 680 300">
-            <!-- Canvas Base -->
-            <rect width="680" height="300" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
+            <text x="35" y="62" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155">IEEE 802.3 Ethernet Frame Structure:</text>
             
-            <!-- Header Bar -->
-            <rect width="680" height="42" fill="#1e3a8a" rx="8"/>
-            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">INTERNAL STRUCTURAL COMPONENTS: {topic_upper}</text>
+            <rect x="35" y="70" width="70" height="35" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5" rx="3"/>
+            <text x="70" y="87" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#0369a1" text-anchor="middle">Preamble</text>
+            <text x="70" y="98" font-family="Helvetica, Arial, sans-serif" font-size="7.5" fill="#0284c7" text-anchor="middle">(7 Bytes)</text>
 
-            <!-- Tx Application Buffer -->
-            <rect x="30" y="60" width="170" height="60" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" rx="5"/>
-            <text x="115" y="85" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#1d4ed8" text-anchor="middle">1. TX BUFFER</text>
-            <text x="115" y="105" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#3b82f6" text-anchor="middle">Application Data Stream</text>
+            <rect x="108" y="70" width="40" height="35" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5" rx="3"/>
+            <text x="128" y="87" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#0369a1" text-anchor="middle">SFD</text>
+            <text x="128" y="98" font-family="Helvetica, Arial, sans-serif" font-size="7.5" fill="#0284c7" text-anchor="middle">(1B)</text>
 
-            <!-- Arrow 1 -> 2 -->
-            <line x1="200" y1="90" x2="250" y2="90" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="255,90 247,85 247,95" fill="#0284c7"/>
+            <rect x="151" y="70" width="115" height="35" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5" rx="3"/>
+            <text x="208" y="87" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#0f766e" text-anchor="middle">Dest MAC Addr</text>
+            <text x="208" y="98" font-family="Helvetica, Arial, sans-serif" font-size="7.5" fill="#0d9488" text-anchor="middle">(6 Bytes)</text>
 
-            <!-- Segmenter & Header Formatter -->
-            <rect x="255" y="60" width="170" height="60" fill="#ccfbf1" stroke="#0f766e" stroke-width="1.5" rx="5"/>
-            <text x="340" y="85" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#0f766e" text-anchor="middle">2. SEGMENTER &amp; HEADER</text>
-            <text x="340" y="105" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#115e59" text-anchor="middle">Port &amp; Seq Num Formatting</text>
+            <rect x="269" y="70" width="115" height="35" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5" rx="3"/>
+            <text x="326" y="87" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#0f766e" text-anchor="middle">Source MAC Addr</text>
+            <text x="326" y="98" font-family="Helvetica, Arial, sans-serif" font-size="7.5" fill="#0d9488" text-anchor="middle">(6 Bytes)</text>
 
-            <!-- Arrow 2 -> 3 -->
-            <line x1="425" y1="90" x2="475" y2="90" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="480,90 472,85 472,95" fill="#0284c7"/>
+            <rect x="387" y="70" width="65" height="35" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" rx="3"/>
+            <text x="419" y="87" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#b45309" text-anchor="middle">EtherType</text>
+            <text x="419" y="98" font-family="Helvetica, Arial, sans-serif" font-size="7.5" fill="#d97706" text-anchor="middle">(2 Bytes)</text>
 
-            <!-- Checksum & Error Engine -->
-            <rect x="480" y="60" width="170" height="60" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" rx="5"/>
-            <text x="565" y="85" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">3. CHECKSUM MODULE</text>
-            <text x="565" y="105" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#d97706" text-anchor="middle">16-Bit CRC &amp; Verification</text>
+            <rect x="455" y="70" width="130" height="35" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" rx="3"/>
+            <text x="520" y="87" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#334155" text-anchor="middle">Data Payload</text>
+            <text x="520" y="98" font-family="Helvetica, Arial, sans-serif" font-size="7.5" fill="#64748b" text-anchor="middle">(46 - 1500 Bytes)</text>
 
-            <!-- Arrow 3 down to 4 -->
-            <line x1="565" y1="120" x2="565" y2="165" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="565,170 560,162 570,162" fill="#0284c7"/>
+            <rect x="588" y="70" width="57" height="35" fill="#fce7f3" stroke="#db2777" stroke-width="1.5" rx="3"/>
+            <text x="616" y="87" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#9d174d" text-anchor="middle">FCS / CRC</text>
+            <text x="616" y="98" font-family="Helvetica, Arial, sans-serif" font-size="7.5" fill="#db2777" text-anchor="middle">(4 Bytes)</text>
 
-            <!-- Flow Control & Network Interface -->
-            <rect x="480" y="170" width="170" height="60" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5" rx="5"/>
-            <text x="565" y="195" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#4338ca" text-anchor="middle">4. FLOW &amp; SOCKET CONTROL</text>
-            <text x="565" y="215" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#6366f1" text-anchor="middle">Sliding Window &amp; Timers</text>
+            <text x="35" y="125" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155">Switched Ethernet Star Topology:</text>
 
-            <!-- Arrow 4 left to 5 -->
-            <line x1="480" y1="200" x2="430" y2="200" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="425,200 433,195 433,205" fill="#0284c7"/>
+            <rect x="260" y="140" width="160" height="45" fill="#1e293b" rx="6" stroke="#0f766e" stroke-width="2"/>
+            <text x="340" y="162" font-family="Helvetica, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#38bdf8" text-anchor="middle">CENTRAL SWITCH</text>
+            <text x="340" y="176" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#94a3b8" text-anchor="middle">Multi-port Packet Forwarding</text>
 
-            <!-- Reassembly Engine -->
-            <rect x="255" y="170" width="170" height="60" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5" rx="5"/>
-            <text x="340" y="195" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#15803d" text-anchor="middle">5. REASSEMBLY ENGINE</text>
-            <text x="340" y="215" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#16a34a" text-anchor="middle">In-Order Packet Sorting</text>
+            <rect x="35" y="210" width="125" height="42" fill="#eff6ff" stroke="#3b82f6" rx="5"/>
+            <text x="97" y="228" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#1d4ed8" text-anchor="middle">HOST A (Tx)</text>
+            <text x="97" y="242" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#3b82f6" text-anchor="middle">MAC: 00:1A:2B:3C:4D:5E</text>
+            <line x1="160" y1="230" x2="270" y2="185" stroke="#3b82f6" stroke-width="1.5"/>
 
-            <!-- Arrow 5 left to 6 -->
-            <line x1="255" y1="200" x2="205" y2="200" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="200,200 208,195 208,205" fill="#0284c7"/>
+            <rect x="185" y="210" width="125" height="42" fill="#f0fdf4" stroke="#16a34a" rx="5"/>
+            <text x="247" y="228" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#15803d" text-anchor="middle">HOST B (Rx)</text>
+            <text x="247" y="242" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#16a34a" text-anchor="middle">MAC: 00:1A:2B:3C:4D:5F</text>
+            <line x1="250" y1="210" x2="310" y2="185" stroke="#16a34a" stroke-width="1.5"/>
 
-            <!-- Rx Application Buffer -->
-            <rect x="30" y="170" width="170" height="60" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" rx="5"/>
-            <text x="115" y="195" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#334155" text-anchor="middle">6. RX BUFFER</text>
-            <text x="115" y="215" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#64748b" text-anchor="middle">Delivered Application Data</text>
+            <rect x="370" y="210" width="125" height="42" fill="#fef3c7" stroke="#d97706" rx="5"/>
+            <text x="432" y="228" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#b45309" text-anchor="middle">HOST C</text>
+            <text x="432" y="242" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#d97706" text-anchor="middle">MAC: 00:1A:2B:3C:4D:60</text>
+            <line x1="430" y1="210" x2="370" y2="185" stroke="#d97706" stroke-width="1.5"/>
 
-            <!-- Bottom Status -->
-            <rect x="140" y="250" width="400" height="24" fill="#f8fafc" rx="4" stroke="#cbd5e1"/>
-            <text x="340" y="266" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#475569" text-anchor="middle">Data Pipeline: Bi-directional Transmission, Packetizing &amp; Verification</text>
+            <rect x="520" y="210" width="125" height="42" fill="#f1f5f9" stroke="#64748b" rx="5"/>
+            <text x="582" y="228" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">HOST D</text>
+            <text x="582" y="242" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#64748b" text-anchor="middle">MAC: 00:1A:2B:3C:4D:61</text>
+            <line x1="520" y1="230" x2="410" y2="185" stroke="#64748b" stroke-width="1.5"/>
+
+            <rect x="140" y="270" width="400" height="22" fill="#f8fafc" rx="4" stroke="#cbd5e1"/>
+            <text x="340" y="285" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#475569" text-anchor="middle">Ethernet Standard: Point-to-Point Full-Duplex Switching without Collisions</text>
         </svg>'''
 
-    elif is_concept:
-        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="295" viewBox="0 0 680 295">
-            <!-- Canvas Base -->
-            <rect width="680" height="295" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
-            
-            <!-- Header Bar -->
-            <rect width="680" height="42" fill="#0f766e" rx="8"/>
-            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">CONCEPT MAP &amp; KNOWLEDGE MATRIX: {topic_upper}</text>
+    # 2. CSMA / CSMA/CD Specific Diagram
+    elif "csma" in combined_text or "collision" in combined_text:
+        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="310" viewBox="0 0 680 310">
+            <rect width="680" height="310" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
+            <rect width="680" height="42" fill="#b45309" rx="8"/>
+            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">CSMA/CD: CARRIER SENSING &amp; COLLISION DETECTION PROTOCOL</text>
 
-            <!-- Center Node -->
-            <rect x="240" y="115" width="200" height="55" fill="#1e293b" rx="6" stroke="#0f766e" stroke-width="2"/>
-            <text x="340" y="140" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#38bdf8" text-anchor="middle">{topic_upper}</text>
-            <text x="340" y="157" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#94a3b8" text-anchor="middle">Transport Layer Protocol</text>
+            <rect x="30" y="65" width="135" height="55" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" rx="5"/>
+            <text x="97" y="87" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">1. CARRIER SENSE</text>
+            <text x="97" y="104" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#3b82f6" text-anchor="middle">Listen to Medium (Idle?)</text>
 
-            <!-- Node 1: Top Left - Prerequisites -->
-            <rect x="30" y="55" width="180" height="50" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" rx="5"/>
-            <text x="120" y="77" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">1. PREREQUISITES</text>
-            <text x="120" y="93" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#3b82f6" text-anchor="middle">IP Layer &amp; Port Sockets</text>
-            <line x1="210" y1="90" x2="250" y2="120" stroke="#3b82f6" stroke-width="1.5"/>
+            <line x1="165" y1="92" x2="190" y2="92" stroke="#0284c7" stroke-width="2"/>
+            <polygon points="195,92 187,87 187,97" fill="#0284c7"/>
 
-            <!-- Node 2: Top Right - Core Mechanics -->
-            <rect x="470" y="55" width="180" height="50" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5" rx="5"/>
-            <text x="560" y="77" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#0f766e" text-anchor="middle">2. CORE MECHANICS</text>
-            <text x="560" y="93" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#0d9488" text-anchor="middle">Checksum &amp; Packet Flags</text>
-            <line x1="470" y1="90" x2="430" y2="120" stroke="#0d9488" stroke-width="1.5"/>
+            <rect x="195" y="65" width="135" height="55" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5" rx="5"/>
+            <text x="262" y="87" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#0f766e" text-anchor="middle">2. TRANSMIT FRAME</text>
+            <text x="262" y="104" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#0d9488" text-anchor="middle">Send Data on Shared Bus</text>
 
-            <!-- Node 3: Bottom Left - Applications -->
-            <rect x="30" y="180" width="180" height="50" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5" rx="5"/>
-            <text x="120" y="202" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#15803d" text-anchor="middle">3. APPLICATIONS</text>
-            <text x="120" y="218" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#16a34a" text-anchor="middle">Web, Cloud, Streaming, DNS</text>
-            <line x1="210" y1="195" x2="250" y2="165" stroke="#16a34a" stroke-width="1.5"/>
+            <line x1="330" y1="92" x2="355" y2="92" stroke="#0284c7" stroke-width="2"/>
+            <polygon points="360,92 352,87 352,97" fill="#0284c7"/>
 
-            <!-- Node 4: Bottom Right - Control & Security -->
-            <rect x="470" y="180" width="180" height="50" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" rx="5"/>
-            <text x="560" y="202" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#b45309" text-anchor="middle">4. CONTROL &amp; SECURITY</text>
-            <text x="560" y="218" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#d97706" text-anchor="middle">Flow Control &amp; Encryption</text>
-            <line x1="470" y1="195" x2="430" y2="165" stroke="#d97706" stroke-width="1.5"/>
+            <rect x="360" y="65" width="140" height="55" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" rx="5"/>
+            <text x="430" y="87" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#b45309" text-anchor="middle">3. COLLISION DETECT</text>
+            <text x="430" y="104" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#d97706" text-anchor="middle">Monitor Signal Voltage</text>
 
-            <!-- Bottom Badge -->
-            <rect x="180" y="255" width="320" height="22" fill="#f1f5f9" rx="4" stroke="#cbd5e1"/>
-            <text x="340" y="270" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#475569" text-anchor="middle">Hierarchical Concept Mapping &amp; Dependencies</text>
+            <line x1="500" y1="92" x2="525" y2="92" stroke="#0284c7" stroke-width="2"/>
+            <polygon points="530,92 522,87 522,97" fill="#0284c7"/>
+
+            <rect x="530" y="65" width="120" height="55" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5" rx="5"/>
+            <text x="590" y="87" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#15803d" text-anchor="middle">SUCCESS</text>
+            <text x="590" y="104" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#16a34a" text-anchor="middle">No Collision: Complete</text>
+
+            <line x1="430" y1="120" x2="430" y2="155" stroke="#dc2626" stroke-width="2"/>
+            <polygon points="430,160 425,152 435,152" fill="#dc2626"/>
+            <text x="435" y="142" font-family="Helvetica, Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#dc2626">Collision Detected!</text>
+
+            <rect x="300" y="160" width="260" height="60" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" rx="5"/>
+            <text x="430" y="182" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#991b1b" text-anchor="middle">4. JAM SIGNAL &amp; RANDOM BACKOFF</text>
+            <text x="430" y="198" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#dc2626" text-anchor="middle">Broadcast 32-bit Jam Signal to notify network</text>
+            <text x="430" y="210" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#b91c1c" text-anchor="middle">Truncated Binary Exponential Backoff: Wait k * 512 bit times</text>
+
+            <line x1="300" y1="190" x2="97" y2="190" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4"/>
+            <line x1="97" y1="190" x2="97" y2="125" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4"/>
+            <polygon points="97,120 92,128 102,128" fill="#dc2626"/>
+            <text x="195" y="183" font-family="Helvetica, Arial, sans-serif" font-size="8.5" font-weight="bold" fill="#dc2626">Reattempt Transmission (Attempt &lt; 16)</text>
+
+            <rect x="140" y="265" width="400" height="24" fill="#f8fafc" rx="4" stroke="#cbd5e1"/>
+            <text x="340" y="281" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#475569" text-anchor="middle">CSMA/CD Mechanism: Contention-based access control for half-duplex media</text>
         </svg>'''
 
-    elif is_state:
-        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="270" viewBox="0 0 680 270">
-            <!-- Canvas Base -->
-            <rect width="680" height="270" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
-            
-            <!-- Header Bar -->
-            <rect width="680" height="42" fill="#4338ca" rx="8"/>
-            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">STATE TRANSITION &amp; FINITE STATE MACHINE: {topic_upper}</text>
-
-            <!-- State 1 -->
-            <rect x="30" y="100" width="130" height="50" fill="#e0e7ff" stroke="#6366f1" stroke-width="2" rx="25"/>
-            <text x="95" y="122" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#4338ca" text-anchor="middle">CLOSED</text>
-            <text x="95" y="137" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#6366f1" text-anchor="middle">Idle / Initial State</text>
-
-            <!-- Arrow 1 -> 2 -->
-            <line x1="160" y1="125" x2="195" y2="125" stroke="#4338ca" stroke-width="2"/>
-            <polygon points="200,125 192,120 192,130" fill="#4338ca"/>
-
-            <!-- State 2 -->
-            <rect x="200" y="100" width="130" height="50" fill="#e0f2fe" stroke="#0284c7" stroke-width="2" rx="25"/>
-            <text x="265" y="122" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#0369a1" text-anchor="middle">SYN_SENT / LISTEN</text>
-            <text x="265" y="137" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#0284c7" text-anchor="middle">Handshake In Progress</text>
-
-            <!-- Arrow 2 -> 3 -->
-            <line x1="330" y1="125" x2="365" y2="125" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="370,125 362,120 362,130" fill="#0284c7"/>
-
-            <!-- State 3 -->
-            <rect x="370" y="100" width="140" height="50" fill="#dcfce7" stroke="#16a34a" stroke-width="2" rx="25"/>
-            <text x="440" y="122" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#15803d" text-anchor="middle">ESTABLISHED</text>
-            <text x="440" y="137" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#16a34a" text-anchor="middle">Data Exchange Active</text>
-
-            <!-- Arrow 3 -> 4 -->
-            <line x1="510" y1="125" x2="545" y2="125" stroke="#16a34a" stroke-width="2"/>
-            <polygon points="550,125 542,120 542,130" fill="#16a34a"/>
-
-            <!-- State 4 -->
-            <rect x="550" y="100" width="100" height="50" fill="#fef3c7" stroke="#d97706" stroke-width="2" rx="25"/>
-            <text x="600" y="122" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="bold" fill="#b45309" text-anchor="middle">TERMINATED</text>
-            <text x="600" y="137" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#d97706" text-anchor="middle">Connection Closed</text>
-
-            <!-- Event Action Labels below arrows -->
-            <rect x="40" y="180" width="140" height="35" fill="#f8fafc" stroke="#e2e8f0" rx="4"/>
-            <text x="110" y="196" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#334155" text-anchor="middle">Event 1: Open Call</text>
-            <text x="110" y="208" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#64748b" text-anchor="middle">Send SYN Packet</text>
-
-            <rect x="200" y="180" width="140" height="35" fill="#f8fafc" stroke="#e2e8f0" rx="4"/>
-            <text x="270" y="196" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#334155" text-anchor="middle">Event 2: ACK Recv</text>
-            <text x="270" y="208" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#64748b" text-anchor="middle">Complete Handshake</text>
-
-            <rect x="360" y="180" width="140" height="35" fill="#f8fafc" stroke="#e2e8f0" rx="4"/>
-            <text x="430" y="196" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#334155" text-anchor="middle">Event 3: Full-Duplex</text>
-            <text x="430" y="208" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#64748b" text-anchor="middle">Stream Payload Data</text>
-
-            <rect x="520" y="180" width="130" height="35" fill="#f8fafc" stroke="#e2e8f0" rx="4"/>
-            <text x="585" y="196" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="#334155" text-anchor="middle">Event 4: Close / FIN</text>
-            <text x="585" y="208" font-family="Helvetica, Arial, sans-serif" font-size="8" fill="#64748b" text-anchor="middle">Clean Teardown</text>
-
-            <text x="340" y="248" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#475569" text-anchor="middle">Protocol Finite State Machine (FSM) Lifecycle</text>
-        </svg>'''
-
-    elif is_architecture:
-        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="290" viewBox="0 0 680 290">
-            <!-- Canvas Base -->
-            <rect width="680" height="290" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
-            
-            <!-- Header Bar -->
-            <rect width="680" height="42" fill="#1e3a8a" rx="8"/>
-            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">SYSTEM ARCHITECTURE &amp; PROTOCOL STACK: {topic_upper}</text>
-
-            <!-- Tier 1: Application Layer -->
-            <rect x="50" y="55" width="580" height="42" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" rx="5"/>
-            <text x="340" y="74" font-family="Helvetica, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">APPLICATION LAYER (HTTP / HTTPS / DNS / SSH / FTP)</text>
-            <text x="340" y="89" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#3b82f6" text-anchor="middle">Data Origin &amp; User Process Interaction [Generates Application Payload]</text>
-
-            <!-- Arrow Down -->
-            <line x1="340" y1="97" x2="340" y2="112" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="340,116 335,108 345,108" fill="#0284c7"/>
-
-            <!-- Tier 2: Core Topic Layer -->
-            <rect x="50" y="118" width="580" height="50" fill="#ccfbf1" stroke="#0f766e" stroke-width="2.5" rx="5"/>
-            <text x="340" y="139" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#0f766e" text-anchor="middle">TRANSPORT LAYER: {topic_upper}</text>
-            <text x="340" y="157" font-family="Helvetica, Arial, sans-serif" font-size="10" fill="#115e59" text-anchor="middle">Port Multiplexing | Segment Header | Flow Control | Error Verification</text>
-
-            <!-- Arrow Down -->
-            <line x1="340" y1="168" x2="340" y2="183" stroke="#0284c7" stroke-width="2"/>
-            <polygon points="340,187 335,179 345,179" fill="#0284c7"/>
-
-            <!-- Tier 3: Network Layer -->
-            <rect x="50" y="189" width="580" height="42" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" rx="5"/>
-            <text x="340" y="208" font-family="Helvetica, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#334155" text-anchor="middle">NETWORK LAYER (INTERNET PROTOCOL - IP)</text>
-            <text x="340" y="223" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#64748b" text-anchor="middle">Logical IP Addressing &amp; Packet Routing Across Internet Gateways</text>
-
-            <!-- Bottom Note -->
-            <rect x="140" y="248" width="400" height="24" fill="#f8fafc" rx="4" stroke="#cbd5e1"/>
-            <text x="340" y="264" font-family="Helvetica, Arial, sans-serif" font-size="9.5" font-weight="bold" fill="#475569" text-anchor="middle">Data Encapsulation Flow: Application Data -&gt; Segment -&gt; IP Packet</text>
-        </svg>'''
-
+    # 3. Dynamic Topic Diagram (For ALL other topics, guaranteeing topic-customized colors & labels)
     else:
-        # Generic Crisp Flowchart Diagram
-        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="270" viewBox="0 0 680 270">
-            <!-- Canvas Base -->
-            <rect width="680" height="270" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
+        hash_val = sum(ord(c) for c in clean_topic)
+        palettes = [
+            {"primary": "#1e3a8a", "secondary": "#3b82f6", "accent": "#0284c7", "bg": "#eff6ff"},
+            {"primary": "#0f766e", "secondary": "#0d9488", "accent": "#14b8a6", "bg": "#ccfbf1"},
+            {"primary": "#4338ca", "secondary": "#6366f1", "accent": "#818cf8", "bg": "#e0e7ff"},
+            {"primary": "#b45309", "secondary": "#d97706", "accent": "#f59e0b", "bg": "#fef3c7"},
+            {"primary": "#831843", "secondary": "#db2777", "accent": "#f43f5e", "bg": "#ffe4e6"},
+        ]
+        p = palettes[hash_val % len(palettes)]
 
-            <!-- Header Bar -->
-            <rect width="680" height="42" fill="#0f766e" rx="8"/>
-            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">CONCEPTUAL FLOWCHART: {clean_title.upper()}</text>
+        svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" width="680" height="280" viewBox="0 0 680 280">
+            <rect width="680" height="280" fill="#ffffff" rx="8" stroke="#cbd5e1" stroke-width="1.5"/>
+            <rect width="680" height="42" fill="{p['primary']}" rx="8"/>
+            <text x="340" y="27" font-family="Helvetica, Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#ffffff" text-anchor="middle">{topic_upper}: {title_upper}</text>
 
-            <!-- Box 1: Input / Origin -->
-            <rect x="40" y="68" width="165" height="70" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" rx="6"/>
-            <text x="122" y="98" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#1d4ed8" text-anchor="middle">INPUT DATA</text>
-            <text x="122" y="118" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#3b82f6" text-anchor="middle">Origin &amp; Request Stream</text>
+            <rect x="40" y="70" width="165" height="70" fill="{p['bg']}" stroke="{p['secondary']}" stroke-width="2" rx="6"/>
+            <text x="122" y="98" font-family="Helvetica, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="{p['primary']}" text-anchor="middle">1. INPUT DATA STREAM</text>
+            <text x="122" y="118" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="{p['secondary']}" text-anchor="middle">{clean_topic} Request</text>
 
-            <!-- Arrow 1 -->
-            <line x1="205" y1="103" x2="252" y2="103" stroke="#0284c7" stroke-width="2.5"/>
-            <polygon points="257,103 249,98 249,108" fill="#0284c7"/>
+            <line x1="205" y1="105" x2="252" y2="105" stroke="{p['accent']}" stroke-width="2.5"/>
+            <polygon points="257,105 249,100 249,110" fill="{p['accent']}"/>
 
-            <!-- Box 2: Core Processing -->
-            <rect x="259" y="58" width="162" height="90" fill="#ccfbf1" stroke="#0f766e" stroke-width="2.5" rx="6"/>
-            <text x="340" y="88" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#0f766e" text-anchor="middle">{topic_upper}</text>
-            <text x="340" y="108" font-family="Helvetica, Arial, sans-serif" font-size="10.5" font-weight="bold" fill="#115e59" text-anchor="middle">CORE PROTOCOL</text>
-            <text x="340" y="128" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#0f766e" text-anchor="middle">Formatting &amp; Controls</text>
+            <rect x="259" y="60" width="162" height="90" fill="#ffffff" stroke="{p['primary']}" stroke-width="2.5" rx="6"/>
+            <text x="340" y="88" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="{p['primary']}" text-anchor="middle">{topic_upper}</text>
+            <text x="340" y="108" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="{p['secondary']}" text-anchor="middle">CORE MECHANISM</text>
+            <text x="340" y="128" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#475569" text-anchor="middle">Processing &amp; Logic Engine</text>
 
-            <!-- Arrow 2 -->
-            <line x1="421" y1="103" x2="468" y2="103" stroke="#0284c7" stroke-width="2.5"/>
-            <polygon points="473,103 465,98 465,108" fill="#0284c7"/>
+            <line x1="421" y1="105" x2="468" y2="105" stroke="{p['accent']}" stroke-width="2.5"/>
+            <polygon points="473,105 465,100 465,110" fill="{p['accent']}"/>
 
-            <!-- Box 3: Output / Result -->
-            <rect x="475" y="68" width="165" height="70" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" rx="6"/>
-            <text x="557" y="98" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="bold" fill="#15803d" text-anchor="middle">OUTPUT / RESULT</text>
-            <text x="557" y="118" font-family="Helvetica, Arial, sans-serif" font-size="9.5" fill="#16a34a" text-anchor="middle">Verified Delivery Target</text>
+            <rect x="475" y="70" width="165" height="70" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" rx="6"/>
+            <text x="557" y="98" font-family="Helvetica, Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#15803d" text-anchor="middle">3. VERIFIED OUTPUT</text>
+            <text x="557" y="118" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#16a34a" text-anchor="middle">{clean_topic} Delivery Target</text>
 
-            <!-- Bottom Attribute Badges -->
-            <rect x="40" y="175" width="180" height="50" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="5"/>
-            <text x="130" y="196" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">1. High Reliability</text>
-            <text x="130" y="213" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#64748b" text-anchor="middle">Error Detection &amp; Checking</text>
+            <rect x="40" y="180" width="180" height="48" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="5"/>
+            <text x="130" y="201" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">Feature 1: Operational Precision</text>
+            <text x="130" y="217" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#64748b" text-anchor="middle">{clean_topic} Spec Controls</text>
 
-            <rect x="250" y="175" width="180" height="50" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="5"/>
-            <text x="340" y="196" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">2. Explicit Controls</text>
-            <text x="340" y="213" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#64748b" text-anchor="middle">Flow &amp; Sequence Tracking</text>
+            <rect x="250" y="180" width="180" height="48" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="5"/>
+            <text x="340" y="201" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">Feature 2: Scalable Design</text>
+            <text x="340" y="217" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#64748b" text-anchor="middle">High Efficiency Throughput</text>
 
-            <rect x="460" y="175" width="180" height="50" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="5"/>
-            <text x="550" y="196" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">3. Standard Compliant</text>
-            <text x="550" y="213" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#64748b" text-anchor="middle">RFC Standard Specifications</text>
+            <rect x="460" y="180" width="180" height="48" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="5"/>
+            <text x="550" y="201" font-family="Helvetica, Arial, sans-serif" font-size="10" font-weight="bold" fill="#334155" text-anchor="middle">Feature 3: System Reliability</text>
+            <text x="550" y="217" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#64748b" text-anchor="middle">Standard Engineering Pattern</text>
         </svg>'''
 
     b64 = base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
@@ -688,8 +501,8 @@ def generate_fallback_svg_data_uri(title: str, topic_name: str = "Topic Architec
 
 def fetch_image_as_data_uri(url: str, title: str = "", topic_name: str = "") -> str:
     """
-    Returns a simple, clean, explicitly labeled educational vector SVG diagram.
-    AI prompt image URLs (e.g. Pollinations AI, Unsplash, external web links) are replaced with crisp, labeled educational SVG diagrams.
+    Returns an image Data URI. Attempts to fetch online image or AI prompt image,
+    and falls back to a clean, topic-specific labeled vector SVG diagram if fetch fails or offline.
     """
     if not url or not isinstance(url, str):
         return generate_simple_labeled_diagram_svg(title, topic_name)
@@ -698,9 +511,9 @@ def fetch_image_as_data_uri(url: str, title: str = "", topic_name: str = "") -> 
     if url.startswith("data:image/"):
         return url
 
-    # Replace AI image generation URLs with clear labeled SVG diagrams
+    # Only replace obvious placeholder domain URLs directly
     url_lower = url.lower()
-    if any(domain in url_lower for domain in ("pollinations.ai", "dalle", "midjourney", "stable-diffusion", "placeholder")):
+    if any(domain in url_lower for domain in ("placeholder", "dummy", "example.com")):
         return generate_simple_labeled_diagram_svg(title, topic_name)
 
     headers = {
@@ -709,12 +522,14 @@ def fetch_image_as_data_uri(url: str, title: str = "", topic_name: str = "") -> 
 
     try:
         import httpx
-        with httpx.Client(timeout=4.0, follow_redirects=True, verify=False) as client:
+        with httpx.Client(timeout=5.0, follow_redirects=True, verify=False) as client:
             resp = client.get(url, headers=headers)
-            if resp.status_code == 200 and len(resp.content) > 100:
+            if resp.status_code == 200 and len(resp.content) > 200:
                 content_type = resp.headers.get("content-type", "image/png").split(";")[0].strip()
-                if "html" not in content_type and "text" not in content_type and "xml" not in content_type:
+                if any(img_type in content_type for img_type in ("image/", "jpeg", "png", "webp", "svg", "gif")):
                     b64 = base64.b64encode(resp.content).decode("utf-8")
+                    if "svg" in content_type:
+                        return f"data:image/svg+xml;base64,{b64}"
                     return f"data:{content_type};base64,{b64}"
     except Exception as e:
         logger.debug(f"httpx image fetch failed for '{url}': {str(e)}")
@@ -724,43 +539,39 @@ def fetch_image_as_data_uri(url: str, title: str = "", topic_name: str = "") -> 
 
 def clean_markdown_for_pdf(md_content: str, topic_name: str = "") -> str:
     """
-    Cleans markdown content and transforms callout markers, images, and Mermaid blocks into styled HTML for PDF rendering.
-    Pre-fetches image URLs into base64 Data URIs to ensure 100% reliable PDF rendering.
+    Cleans markdown content and transforms Mermaid blocks into styled HTML for PDF rendering.
+    Policy: max ONE Mermaid diagram per topic. All external image tags are stripped.
     """
     if not md_content or not isinstance(md_content, str):
         return "Study material could not be generated."
 
     md_content = remove_unwanted_sections(md_content)
 
-    # 0. Check if image tags exist; if missing, auto-inject a topic-based image tag
-    has_images = bool(RE_MARKDOWN_IMAGE.search(md_content) or RE_MERMAID_BLOCK.search(md_content))
-    if not has_images and topic_name:
-        encoded_topic = urllib.parse.quote(topic_name)
-        auto_img_tag = (
-            f"\n\n![Figure 1: {topic_name} Architectural & System Diagram]"
-            f"(https://image.pollinations.ai/prompt/technical%20educational%20diagram%20architecture%20flowchart%20of%20{encoded_topic}%20computer%20science%20engineering)\n\n"
-        )
-        if "## 4. Visual Learning" in md_content:
-            md_content = md_content.replace("## 4. Visual Learning", "## 4. Visual Learning" + auto_img_tag)
-        elif "## 3. Core Theory" in md_content:
-            md_content = md_content.replace("## 3. Core Theory", "## 3. Core Theory" + auto_img_tag)
-        else:
-            md_content += auto_img_tag
+    # Strip ALL external markdown image tags: ![alt](url) — they produce vague identical SVG fallbacks
+    md_content = RE_MARKDOWN_IMAGE.sub('', md_content)
 
-    # 1. Transform Mermaid code blocks into rendered visual image tags
+    # Render the FIRST Mermaid block only; strip any additional ones (no repeated diagrams)
+    mermaid_rendered = [False]
+
     def replace_mermaid(match):
         mermaid_code = match.group(1).strip()
+        if mermaid_rendered[0]:
+            # Already rendered one diagram — strip the rest
+            return ''
+        mermaid_rendered[0] = True
         code_lower = mermaid_code.lower()
         if "sequencediagram" in code_lower:
-            m_title = f"{topic_name} Protocol Sequence & Handshake Diagram"
+            m_title = f"{topic_name} Protocol Sequence Diagram"
         elif "statediagram" in code_lower:
-            m_title = f"{topic_name} State Transition & FSM Diagram"
+            m_title = f"{topic_name} State Transition Diagram"
         elif "classdiagram" in code_lower:
-            m_title = f"{topic_name} Component & Class Structure Diagram"
+            m_title = f"{topic_name} Component & Class Structure"
         elif "gantt" in code_lower:
-            m_title = f"{topic_name} Execution Timeline & Schedule"
+            m_title = f"{topic_name} Execution Timeline"
+        elif "flowchart" in code_lower or "graph" in code_lower:
+            m_title = f"{topic_name} Architecture Flowchart"
         else:
-            m_title = f"{topic_name} Visual System Architecture Diagram"
+            m_title = f"{topic_name} Diagram"
 
         try:
             encoded = base64.b64encode(mermaid_code.encode('utf-8')).decode('utf-8')
@@ -768,20 +579,11 @@ def clean_markdown_for_pdf(md_content: str, topic_name: str = "") -> str:
             data_uri = fetch_image_as_data_uri(img_url, title=m_title, topic_name=topic_name)
             return f'\n<div class="image-box"><img src="{data_uri}" alt="{html.escape(m_title)}"/><p class="figure-caption">{html.escape(m_title)}</p></div>\n'
         except Exception:
-            return match.group(0)
+            return ''
 
     md_content = RE_MERMAID_BLOCK.sub(replace_mermaid, md_content)
 
-    # 2. Transform Markdown image tags ![alt](url) into styled HTML figure containers
-    def replace_image(match):
-        alt_text = match.group(1).strip() or f"{topic_name} Architectural Diagram"
-        img_url = match.group(2).strip()
-        data_uri = fetch_image_as_data_uri(img_url, title=alt_text, topic_name=topic_name)
-        return f'\n<div class="image-box"><img src="{data_uri}" alt="{alt_text}"/><p class="figure-caption">{alt_text}</p></div>\n'
-
-    md_content = RE_MARKDOWN_IMAGE.sub(replace_image, md_content)
-
-    # 3. Transform Callout boxes
+    # Transform Callout boxes
     def replace_callout(match):
         kind = match.group(1).lower()
         body = match.group(2).strip()
@@ -824,11 +626,6 @@ def generate_topic_pdf(
     topic_names_str = ", ".join(topic_names)
     total_duration = sum(topic_item.duration for topic_item, _ in successful_topics)
     
-    all_pedagogy_set = set()
-    for topic_item, _ in successful_topics:
-        all_pedagogy_set.update(topic_item.pedagogy)
-    all_pedagogy_str = ", ".join(sorted(all_pedagogy_set)) if all_pedagogy_set else "Standard Academic Instruction"
-
     # 1. Executive Cover Page HTML
     cover_html = f"""
     <pdf:nexttemplate name="cover_template" />
@@ -836,7 +633,7 @@ def generate_topic_pdf(
     <div style="padding: 2.5cm 2cm 2cm 2cm; color: #ffffff;">
         <div style="margin-top: 2.5cm; border-bottom: 2px solid #0d9488; padding-bottom: 15px;">
             <p style="font-size: 10pt; color: #38bdf8; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
-                PEDAGOGY-DRIVEN STUDY MATERIAL & REFERENCE
+                ACADEMIC STUDY MATERIAL & REFERENCE
             </p>
             <h1 style="font-size: 26pt; color: #ffffff; margin: 8px 0; font-weight: bold; line-height: 1.2; border: none; page-break-before: avoid; -pdf-outline: false;">
                 {request.subject_name}
@@ -856,9 +653,6 @@ def generate_topic_pdf(
             <p style="font-size: 10pt; color: #cbd5e1; margin-top: 6px;">
                 Duration: <strong>{total_duration} Hours</strong>
             </p>
-            <p style="font-size: 10pt; color: #cbd5e1; margin-top: 4px;">
-                Selected Pedagogy: <strong>{all_pedagogy_str}</strong>
-            </p>
         </div>
         
         <div style="margin-top: 3cm; font-size: 9pt; color: #94a3b8; line-height: 1.5;">
@@ -871,12 +665,10 @@ def generate_topic_pdf(
     # 2. Topic Information Page HTML
     topic_rows = []
     for topic_item, _ in successful_topics:
-        p_str = ", ".join(topic_item.pedagogy) if topic_item.pedagogy else "Standard Academic"
         topic_rows.append(f"""
         <tr>
             <td><strong>{topic_item.topic_name}</strong></td>
             <td>{topic_item.duration} Hour(s)</td>
-            <td>{p_str}</td>
         </tr>
         """)
     topic_rows_html = "\n".join(topic_rows)
@@ -910,7 +702,6 @@ def generate_topic_pdf(
             <tr>
                 <th>Topic Name</th>
                 <th>Duration</th>
-                <th>Pedagogy Recommendations</th>
             </tr>
         </thead>
         <tbody>
@@ -924,22 +715,29 @@ def generate_topic_pdf(
     topic_sections_html = []
 
     for topic_item, raw_md in successful_topics:
-        cleaned_md = clean_markdown_for_pdf(raw_md, topic_name=topic_item.topic_name)
-        html_body = md_parser.convert(cleaned_md)
-
-        topic_sections_html.append(f"""
-        <div style="page-break-before: always;">
-            {html_body}
+        cleaned_md = remove_unwanted_sections(raw_md)
+        html_content = md_parser.convert(cleaned_md)
+        
+        topic_header_html = f"""
+        <pdf:nexttemplate name="content_template" />
+        <div style="page-break-before: always; border-bottom: 2px solid #0284c7; padding-bottom: 8px; margin-bottom: 15px;">
+            <span style="font-size: 9pt; color: #0369a1; font-weight: bold; text-transform: uppercase;">
+                {request.course_code} - Unit {request.unit_number}: {request.unit_title}
+            </span>
+            <h1 style="font-size: 20pt; color: #0f172a; margin: 4px 0 0 0; font-weight: bold; border: none; page-break-before: avoid; -pdf-outline: true;">
+                Topic: {topic_item.topic_name}
+            </h1>
         </div>
-        """)
+        """
+        topic_sections_html.append(topic_header_html + html_content)
 
-    all_topics_content_html = "\n".join(topic_sections_html)
+    all_topics_content_html = "\n\n".join(topic_sections_html)
 
     # 4. Pygments syntax highlighting CSS
     pygments_css = HtmlFormatter(style='friendly').get_style_defs('.codehilite')
 
-    # 5. Assemble Full HTML Document
-    full_html = f"""<!DOCTYPE html>
+    full_html = f"""
+    <!DOCTYPE html>
     <html>
     <head>
     <meta charset="utf-8">
@@ -1023,7 +821,7 @@ def generate_unit_pdf(request, unit, unit_markdown, output_dir):
             course_code=getattr(request, "course_code", "COURSE101"),
             unit_number=getattr(unit, "unit_number", 1),
             unit_title=getattr(unit, "unit_title", "Unit Title"),
-            topics=[TopicRequestItem(topic_name=getattr(unit, "unit_title", "Topic"), duration=1, pedagogy=[])]
+            topics=[TopicRequestItem(topic_name=getattr(unit, "unit_title", "Topic"), duration=1)]
         )
 
     successful = [(req.topics[0], unit_markdown)]

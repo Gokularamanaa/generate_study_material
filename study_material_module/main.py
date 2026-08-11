@@ -1,8 +1,10 @@
 import logging
 import asyncio
 import time
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from .schemas import (
     TopicStudyMaterialRequest,
     TopicStudyMaterialResponse,
@@ -11,7 +13,7 @@ from .schemas import (
     StudyMaterialResponse
 )
 from .utils import setup_logging, slugify
-from .config import OUTPUT_DIR
+from .config import OUTPUT_DIR, BASE_DIR
 from .prompt_builder import build_topic_prompt
 from .llm_client import generate_study_material_for_topic_async
 from .pdf_generator import generate_topic_pdf
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Study Material Generation Module",
-    description="Topic-level study material generation service driven by pedagogy recommendations.",
+    description="Topic-level study material generation service.",
     version="2.0.0"
 )
 
@@ -35,7 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/", summary="API Root Status")
+@app.get("/api/status", summary="API Root Status")
 def read_root():
     return {
         "message": "Topic-Based Study Material Generation Module API is active.",
@@ -49,11 +51,11 @@ def read_root():
     response_model=TopicStudyMaterialResponse,
     response_model_exclude_none=True,
     status_code=status.HTTP_200_OK,
-    summary="Generate detailed study material PDFs for specific topics based on pedagogy recommendations"
+    summary="Generate detailed academic study material PDFs for specific topics"
 )
 async def generate_study_material(request: TopicStudyMaterialRequest):
     """
-    Consumes topic details and pedagogy recommendations, generates detailed academic study material,
+    Consumes topic details, generates detailed academic study material,
     and returns the path to the output PDF containing generated topics.
     """
     logger.info("Received Topic-Level Request")
@@ -72,7 +74,7 @@ async def generate_study_material(request: TopicStudyMaterialRequest):
     successful_topics = []
     
     for index, topic in enumerate(request.topics):
-        logger.info(f"Processing Topic {index + 1}/{len(request.topics)}: {topic.topic_name} (Pedagogy: {topic.pedagogy})")
+        logger.info(f"Processing Topic {index + 1}/{len(request.topics)}: {topic.topic_name}")
         
         try:
             topic_prompt = build_topic_prompt(
@@ -81,8 +83,7 @@ async def generate_study_material(request: TopicStudyMaterialRequest):
                 unit_number=request.unit_number,
                 unit_title=request.unit_title,
                 topic_name=topic.topic_name,
-                duration=topic.duration,
-                pedagogy=topic.pedagogy
+                duration=topic.duration
             )
             
             # Generate topic content via LLM
@@ -133,3 +134,12 @@ async def generate_study_material(request: TopicStudyMaterialRequest):
         pdf_path=pdf_path,
         topic_results=topic_results
     )
+
+# Serve PDF outputs statically at /output
+app.mount("/output", StaticFiles(directory=OUTPUT_DIR), name="output")
+
+# Serve frontend web UI statically at / (Must be mounted AFTER API endpoints)
+static_dir = BASE_DIR / "static"
+if static_dir.exists():
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+

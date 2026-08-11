@@ -4,7 +4,8 @@ from typing import List, Optional
 class TopicRequestItem(BaseModel):
     topic_name: str = Field(..., description="The name of the topic, e.g. TCP")
     duration: int = Field(..., description="The duration of the topic in hours")
-    pedagogy: List[str] = Field(default_factory=list, description="List of pedagogy recommendations for this topic")
+
+
 
 class TopicStudyMaterialRequest(BaseModel):
     subject_name: str = Field(..., description="The subject name, e.g. Computer Networks")

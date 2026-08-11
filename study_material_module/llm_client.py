@@ -6,6 +6,7 @@ import httpx
 from tenacity import retry, stop_after_attempt, retry_if_exception, wait_exponential
 
 from .config import (
+    OPENAI_API_KEY,
     OPENROUTER_API_KEY,
     GROK_API_KEY,
     GEMINI_API_KEY,
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 PLACEHOLDER_API_KEYS = {
     "",
+    "your_openai_api_key_here",
     "your_openrouter_api_key_here",
     "your_grok_api_key_here",
     "your_gemini_api_key_here",
@@ -78,7 +80,16 @@ def get_provider_and_key(provider: str = None) -> tuple[str, str]:
     """
     active_provider = (provider or get_active_provider()).lower()
     
-    if active_provider == "openrouter":
+    if active_provider == "openai":
+        api_key = os.getenv("OPENAI_API_KEY", OPENAI_API_KEY).strip()
+        if not api_key or api_key in PLACEHOLDER_API_KEYS:
+            raise LLMConfigurationError(
+                "OpenAI API key is not configured or is a placeholder. "
+                "Please set OPENAI_API_KEY in your environment or .env file."
+            )
+        return "openai", api_key
+
+    elif active_provider == "openrouter":
         api_key = os.getenv("OPENROUTER_API_KEY", OPENROUTER_API_KEY).strip()
         if not api_key or api_key in PLACEHOLDER_API_KEYS:
             raise LLMConfigurationError(
@@ -270,8 +281,54 @@ async def call_gemini_api(prompt: str, api_key: str, model_name: str) -> str:
         raise LLMGenerationError(f"Gemini API Call Failed: {str(e)}")
 
 
+@retry(
+    stop=stop_after_attempt(2),
+    wait=wait_exponential(multiplier=1, min=2, max=5),
+    retry=retry_if_exception(is_retryable_exception),
+    before_sleep=log_retry,
+    reraise=True
+)
+async def call_openai_api(prompt: str, api_key: str, model_name: str) -> str:
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model_name or "gpt-4o",
+        "messages": [
+            {"role": "system", "content": "You are an expert university professor creating comprehensive study material."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.2
+    }
+    
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        response = await client.post(url, headers=headers, json=payload)
+        
+        if response.status_code in (401, 403):
+            raise LLMAuthenticationError(f"OpenAI API Authentication Failed (HTTP {response.status_code}): {response.text}")
+        elif response.status_code == 404:
+            raise LLMModelNotFoundError(f"OpenAI Model '{model_name}' Not Found (HTTP 404): {response.text}")
+        elif response.status_code == 429:
+            raise LLMQuotaExceededError(f"OpenAI Rate Limit / Quota Exceeded (HTTP 429): {response.text}")
+        elif response.status_code >= 400:
+            raise LLMGenerationError(f"OpenAI API Error (HTTP {response.status_code}): {response.text}")
+            
+        data = response.json()
+        try:
+            content = data["choices"][0]["message"]["content"]
+            if not content or not str(content).strip():
+                raise LLMGenerationError("OpenAI API returned empty content.")
+            return content
+        except (KeyError, IndexError, TypeError) as e:
+            raise LLMGenerationError(f"Failed to parse OpenAI response: {str(e)} - Raw response: {data}")
+
+
 async def _execute_provider_call(provider_name: str, api_key: str, model_name: str, prompt: str) -> str:
-    if provider_name == "openrouter":
+    if provider_name == "openai":
+        return await call_openai_api(prompt, api_key, model_name)
+    elif provider_name == "openrouter":
         return await call_openrouter_api(prompt, api_key, model_name)
     elif provider_name == "grok":
         return await call_grok_api(prompt, api_key, model_name)
@@ -285,7 +342,7 @@ async def _execute_provider_call(provider_name: str, api_key: str, model_name: s
 
 async def generate_study_material_for_topic_async(prompt: str, model_name: str = None, provider: str = None) -> str:
     """
-    Asynchronously calls the configured LLM provider (Gemini, OpenRouter, or Grok).
+    Asynchronously calls the configured LLM provider (OpenAI, Gemini, OpenRouter, or Grok).
     If the primary provider fails due to rate limits, quota limits, or errors,
     automatically falls back to alternative available providers.
     Enforces sequential request execution using asyncio.Lock.
@@ -296,7 +353,7 @@ async def generate_study_material_for_topic_async(prompt: str, model_name: str =
     providers_to_try = [(primary_provider, primary_key, primary_model)]
 
     # Collect available fallback providers
-    all_providers = ["gemini", "openrouter", "grok"]
+    all_providers = ["openai", "gemini", "openrouter", "grok"]
     for p in all_providers:
         if p != primary_provider:
             try:

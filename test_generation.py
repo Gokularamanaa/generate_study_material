@@ -21,20 +21,11 @@ MOCK_TOPIC_PAYLOAD = {
     "topics": [
         {
             "topic_name": "TCP",
-            "duration": 2,
-            "pedagogy": [
-                "Concept Mapping",
-                "Problem-Based Learning",
-                "Case Study"
-            ]
+            "duration": 2
         },
         {
             "topic_name": "UDP",
-            "duration": 1,
-            "pedagogy": [
-                "Interactive Lecture",
-                "Think-Pair-Share"
-            ]
+            "duration": 1
         }
     ]
 }
@@ -63,7 +54,7 @@ sequenceDiagram
     Client->>Server: ACK (seq=x+1, ack=y+1)
 ```
 
-## 5. Pedagogy-Driven Activities
+## 5. Practical Implementation & Conceptual Walkthrough
 ### Concept Mapping & Knowledge Matrix
 TCP connects network layer IP routing with application layer HTTP/FTP protocols.
 
@@ -135,7 +126,7 @@ Unacknowledged, connectionless datagram transmission.
 | Length            | Checksum          |
 +-------------------+-------------------+
 
-## 5. Pedagogy-Driven Activities
+## 5. Practical Implementation & Conceptual Walkthrough
 ### Interactive Conceptual Walkthrough
 Real-time streaming analogy.
 
@@ -276,9 +267,9 @@ class TestTopicStudyMaterialGeneration(unittest.TestCase):
         self.assertEqual(udp_res["topic_name"], "UDP")
         self.assertEqual(udp_res["status"], "success")
 
-    def test_prompt_builder_pedagogy_integration(self):
+    def test_prompt_builder_topic_structure(self):
         """
-        Validates that build_topic_prompt correctly incorporates 12 sections and pedagogy strategies.
+        Validates that build_topic_prompt correctly incorporates 12 sections for pure topic content generation.
         """
         prompt = build_topic_prompt(
             subject_name="Computer Networks",
@@ -286,18 +277,14 @@ class TestTopicStudyMaterialGeneration(unittest.TestCase):
             unit_number=2,
             unit_title="Transport Layer",
             topic_name="TCP",
-            duration=2,
-            pedagogy=["Concept Mapping", "Problem-Based Learning", "Case Study"]
+            duration=2
         )
 
-        self.assertIn("Concept Mapping Integration", prompt)
-        self.assertIn("Problem-Based Learning Integration", prompt)
-        self.assertIn("Case Study Integration", prompt)
         self.assertIn("## 1. Learning Outcomes", prompt)
         self.assertIn("## 2. Introduction", prompt)
         self.assertIn("## 3. Core Theory", prompt)
         self.assertIn("## 4. Visual Learning", prompt)
-        self.assertIn("## 5. Pedagogy-Driven Activities", prompt)
+        self.assertIn("## 5. Practical Implementation & Conceptual Walkthrough", prompt)
         self.assertIn("## 6. Real-World Applications", prompt)
         self.assertIn("## 7. Industry Perspective", prompt)
         self.assertIn("## 8. Interview Preparation", prompt)
@@ -311,9 +298,9 @@ class TestTopicStudyMaterialGeneration(unittest.TestCase):
         self.assertIn("5 Ten-Mark University Questions", prompt)
         self.assertIn("15 Viva Questions", prompt)
 
-    def test_prompt_builder_images_and_hands_on(self):
+    def test_prompt_builder_topic_name_and_metadata(self):
         """
-        Validates that build_topic_prompt properly handles 'diagram-based learning' and 'hands-on'.
+        Validates that build_topic_prompt properly includes topic metadata and excludes meta instructions.
         """
         prompt = build_topic_prompt(
             subject_name="Database Systems",
@@ -321,15 +308,14 @@ class TestTopicStudyMaterialGeneration(unittest.TestCase):
             unit_number=1,
             unit_title="Relational Model",
             topic_name="B-Tree Indexing",
-            duration=3,
-            pedagogy=["diagram-based learning", "hands-on learning"]
+            duration=3
         )
 
-        self.assertIn("Diagram-Based & Visual Learning Integration", prompt)
-        self.assertIn("Diagram-Based & Visual Learning Module", prompt)
-        self.assertIn("Hands-On Learning Integration", prompt)
-        self.assertIn("Hands-On Laboratory Activity", prompt)
         self.assertIn("B-Tree Indexing", prompt)
+        self.assertIn("CS3492", prompt)
+        self.assertNotIn("META INSTRUCTIONAL REQUIREMENTS", prompt)
+
+
 
     def test_unwanted_sections_removal(self):
         """
@@ -352,7 +338,10 @@ Remove this too.
 
     def test_clean_markdown_images_and_mermaid(self):
         """
-        Validates transformation of markdown images and Mermaid blocks into HTML image containers with Data URIs.
+        Validates that:
+        - External markdown image tags are stripped (not rendered).
+        - The first Mermaid block is rendered into an HTML image-box.
+        - Additional Mermaid blocks beyond the first are stripped.
         """
         from study_material_module.pdf_generator import clean_markdown_for_pdf, generate_fallback_svg_data_uri
 
@@ -364,18 +353,21 @@ graph TD
 ```
 """
         cleaned = clean_markdown_for_pdf(sample, topic_name="TCP")
+        # External image tag must be stripped
+        self.assertNotIn('alt="Figure 1: TCP Handshake"', cleaned)
+        self.assertNotIn('Figure 1: TCP Handshake', cleaned)
+        # Mermaid block must be rendered
         self.assertIn('<div class="image-box"><img src="data:image/', cleaned)
-        self.assertIn('alt="Figure 1: TCP Handshake"', cleaned)
-        self.assertIn('<p class="figure-caption">Figure 1: TCP Handshake</p>', cleaned)
-        self.assertIn('Visual System Architecture Diagram</p>', cleaned)
+        self.assertIn('TCP Architecture Flowchart', cleaned)
 
         # Test SVG fallback generator directly
         fallback_uri = generate_fallback_svg_data_uri("TCP State Diagram", "TCP")
         self.assertTrue(fallback_uri.startswith("data:image/svg+xml;base64,"))
 
-    def test_auto_image_injection_when_missing(self):
+    def test_no_image_injection_when_missing(self):
         """
-        Validates auto-injection of topic image when LLM output lacks image tags.
+        Validates that no image is auto-injected when LLM output lacks both image tags and Mermaid blocks.
+        The new policy is: no auto-injection; only render what the LLM explicitly provides.
         """
         from study_material_module.pdf_generator import clean_markdown_for_pdf
 
@@ -386,8 +378,11 @@ Exhaustive theory.
 Explanation.
 """
         cleaned = clean_markdown_for_pdf(sample, topic_name="B-Tree Indexing")
-        self.assertIn('<div class="image-box"><img src="data:image/', cleaned)
-        self.assertIn('B-Tree Indexing Architectural & System Diagram', cleaned)
+        # No image-box should be injected since there are no Mermaid or image tags
+        self.assertNotIn('<div class="image-box">', cleaned)
+        # Text content must be preserved
+        self.assertIn('B-Tree Indexing', cleaned)
+        self.assertIn('Exhaustive theory', cleaned)
 
 
 if __name__ == "__main__":
