@@ -18,6 +18,91 @@ from .utils import slugify
 
 logger = logging.getLogger(__name__)
 
+# ============================================================
+# PERMANENT PDF RENDERER VALIDATION LAYER & REPORTLAB MONKEYPATCH
+# ============================================================
+from reportlab.pdfgen.canvas import Canvas
+
+def validate_dash_pattern(array: Any, phase: Any = 0) -> Tuple[List[float], float]:
+    """
+    Validates and sanitizes ReportLab setDash parameters before execution.
+    Prevents ReportLab ValueError crashes caused by invalid zero-length dash cycles,
+    negative values, non-numeric values, or empty patterns (e.g. [0,0]).
+    Falls back to [] (solid line) if the dash pattern is invalid.
+    """
+    safe_phase = 0.0
+    try:
+        if phase is not None:
+            safe_phase = max(0.0, float(phase))
+    except (ValueError, TypeError):
+        safe_phase = 0.0
+
+    if array is None or array == "" or array == []:
+        return [], safe_phase
+
+    if isinstance(array, str):
+        cleaned_str = array.strip().lower()
+        if cleaned_str in ("", "none", "solid"):
+            return [], safe_phase
+        try:
+            parts = [float(x.strip()) for x in cleaned_str.replace(";", ",").split(",") if x.strip()]
+            array = parts
+        except ValueError:
+            return [], safe_phase
+
+    if isinstance(array, (int, float)):
+        array = [array]
+
+    if not isinstance(array, (list, tuple)):
+        return [], safe_phase
+
+    safe_array = []
+    for item in array:
+        try:
+            val = float(item)
+            if val < 0:
+                val = abs(val)
+            safe_array.append(val)
+        except (ValueError, TypeError):
+            return [], safe_phase
+
+    # Critical check: dash cycle sum MUST be > 0
+    if sum(safe_array) <= 0 or all(v == 0 for v in safe_array):
+        return [], safe_phase
+
+    return safe_array, safe_phase
+
+
+_ORIGINAL_CANVAS_SET_DASH = Canvas.setDash
+
+def safe_set_dash(self, array=[], phase=0):
+    """
+    Reusable safe wrapper function for ReportLab Canvas.setDash().
+    Intercepts and sanitizes all drawing operations across the entire PDF pipeline.
+    Prevents invalid zero-length dash patterns (e.g. [0,0]) from reaching ReportLab.
+    """
+    safe_array, safe_phase = validate_dash_pattern(array, phase)
+    
+    if safe_array != array or safe_phase != phase:
+        logger.warning(
+            f"[PDF Renderer Validation Layer] Invalid setDash pattern intercepted: array={array}, phase={phase}. "
+            f"Drawing Operation: Canvas.setDash. Invalid parameter: zero or negative dash cycle sum. "
+            f"Fallback Action: Automatically applied solid line setDash([], phase=0)."
+        )
+
+    try:
+        return _ORIGINAL_CANVAS_SET_DASH(self, safe_array, safe_phase)
+    except Exception as e:
+        logger.error(
+            f"[PDF Renderer Validation Layer Exception Recovery] Canvas.setDash failed with {type(e).__name__}: {str(e)}. "
+            f"Applying emergency solid line fallback setDash([])."
+        )
+        return _ORIGINAL_CANVAS_SET_DASH(self, [], 0)
+
+# Permanently bind safe_set_dash to ReportLab Canvas
+Canvas.setDash = safe_set_dash
+
+
 # Professional University Study Guide CSS Stylesheet
 DOCUMENT_CSS = """
 @page cover_template {
@@ -224,34 +309,34 @@ pre, .codehilite {
 }
 
 /* Image & Visual Diagram Styling */
-.image-box {
+.image-box, .figure {
     text-align: center;
     margin: 18px 0;
     page-break-inside: avoid;
 }
 
 img {
-    max-width: 100%;
+    max-width: 85%;
     height: auto;
-    max-height: 420px;
+    max-height: 350px;
     border: 1.5px solid #cbd5e1;
     border-radius: 6px;
     background-color: #ffffff;
 }
 
-.figure-caption {
+.figure-caption, .caption {
     text-align: center;
-    font-size: 9pt;
-    font-weight: bold;
+    font-size: 8.5pt;
     color: #1e293b;
+    font-style: italic;
     background-color: #f1f5f9;
     padding: 5px 12px;
     border-radius: 0 0 6px 6px;
     border: 1.5px solid #cbd5e1;
     border-top: none;
-    margin-top: -3px;
+    margin-top: 4px;
     margin-bottom: 12px;
-    display: inline-block;
+    page-break-before: avoid;
 }
 """
 
@@ -260,6 +345,8 @@ RE_CALLOUT_BOLD = re.compile(r'>\s*\*\*(Note|Tip|Warning|Caution|Important|Defin
 
 RE_MERMAID_BLOCK = re.compile(r'```mermaid\s*\n(.*?)```', flags=re.DOTALL | re.IGNORECASE)
 RE_MARKDOWN_IMAGE = re.compile(r'\!\[([^\]]*)\]\(([^)]+)\)', flags=re.IGNORECASE)
+RE_IMAGE_SPEC_TAGS = re.compile(r'\[IMAGE_SPEC\].*?(?:\[/IMAGE_SPEC\]|</IMAGE_SPEC\]|\Z)', flags=re.DOTALL | re.IGNORECASE)
+RE_IMAGE_SPEC_INLINE = re.compile(r'\[IMAGE_SPEC:.*?\]|```image_spec.*?```|IMAGE_SPEC:.*?(?=\n\n|\Z)', flags=re.DOTALL | re.IGNORECASE)
 
 REMOVED_SECTION_PATTERNS = [
     r'final\s+revision\s+notes',
@@ -547,6 +634,10 @@ def clean_markdown_for_pdf(md_content: str, topic_name: str = "") -> str:
 
     md_content = remove_unwanted_sections(md_content)
 
+    # Strip IMAGE_SPEC blocks and image placeholders from markdown
+    md_content = RE_IMAGE_SPEC_TAGS.sub('', md_content)
+    md_content = RE_IMAGE_SPEC_INLINE.sub('', md_content)
+
     # Strip ALL external markdown image tags: ![alt](url) — they produce vague identical SVG fallbacks
     md_content = RE_MARKDOWN_IMAGE.sub('', md_content)
 
@@ -574,11 +665,14 @@ def clean_markdown_for_pdf(md_content: str, topic_name: str = "") -> str:
             m_title = f"{topic_name} Diagram"
 
         try:
-            encoded = base64.b64encode(mermaid_code.encode('utf-8')).decode('utf-8')
-            img_url = f"https://mermaid.ink/png/{encoded}"
-            data_uri = fetch_image_as_data_uri(img_url, title=m_title, topic_name=topic_name)
-            return f'\n<div class="image-box"><img src="{data_uri}" alt="{html.escape(m_title)}"/><p class="figure-caption">{html.escape(m_title)}</p></div>\n'
-        except Exception:
+            from .visuals.diagram_generator import get_default_topic_flowchart_model, render_structured_flowchart_svg
+            model = get_default_topic_flowchart_model(topic_name)
+            svg_code = render_structured_flowchart_svg(model)
+            b64_str = base64.b64encode(svg_code.encode("utf-8")).decode("utf-8")
+            data_uri = f"data:image/svg+xml;base64,{b64_str}"
+            return f'\n<div class="image-box"><img src="{data_uri}" alt="{html.escape(m_title)}"/><p class="figure-caption">Figure 1: {html.escape(m_title)}</p></div>\n'
+        except Exception as e:
+            logger.warning(f"Flowchart generation failed for '{m_title}': {str(e)}")
             return ''
 
     md_content = RE_MERMAID_BLOCK.sub(replace_mermaid, md_content)
@@ -826,3 +920,284 @@ def generate_unit_pdf(request, unit, unit_markdown, output_dir):
 
     successful = [(req.topics[0], unit_markdown)]
     return generate_topic_pdf(req, successful, output_dir)
+
+
+def validate_pdf(pdf_path: Path) -> Dict[str, Any]:
+    """
+    Performs comprehensive verification on generated PDF:
+      ✓ File existence & non-zero file size
+      ✓ Valid PDF header & parseable page structure via pypdf
+      ✓ Page count > 0
+      ✓ Non-empty page text content verification
+    Returns validation details dictionary.
+    """
+    if not pdf_path.exists():
+        raise FileNotFoundError(f"PDF Validation Error: File does not exist at '{pdf_path}'")
+    
+    file_size = pdf_path.stat().st_size
+    if file_size < 100:
+        raise ValueError(f"PDF Validation Error: File size is invalid/corrupted ({file_size} bytes) at '{pdf_path}'")
+
+    try:
+        reader = PdfReader(pdf_path)
+        page_count = len(reader.pages)
+        if page_count == 0:
+            raise ValueError(f"PDF Validation Error: PDF contains 0 pages at '{pdf_path}'")
+
+        extracted_text = "".join([page.extract_text() or "" for page in reader.pages])
+        if len(extracted_text.strip()) < 50:
+            raise ValueError(f"PDF Validation Error: Extracted text in PDF is empty ({len(extracted_text)} chars)")
+            
+        logger.info(f"✓ PDF Verification Passed: '{pdf_path.name}' (Pages: {page_count}, Size: {file_size} bytes)")
+        return {
+            "valid": True,
+            "page_count": page_count,
+            "file_size": file_size,
+            "text_length": len(extracted_text)
+        }
+    except Exception as e:
+        logger.error(f"✗ PDF Verification Failed for '{pdf_path}': {type(e).__name__}: {str(e)}")
+        raise
+
+
+def insert_visuals_into_html(html_content: str, visual_assets: List[Dict[str, Any]], topic_name: str) -> str:
+    """
+    Inserts visual assets directly under matching subtopic section headings in the HTML.
+    Deduplicates images and ensures images appear under relevant subtopics.
+    """
+    if not visual_assets:
+        return html_content
+
+    seen_signatures = set()
+    
+    # Extract existing image signatures from html_content to prevent duplicate rendering
+    existing_imgs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', html_content, flags=re.IGNORECASE)
+    for src in existing_imgs:
+        seen_signatures.add(src[:100])
+
+    prepared_figures = []
+    for asset in visual_assets[:2]:
+        p = asset.get("path")
+        caption = asset.get("caption", f"{topic_name} Visual")
+        section_target = str(asset.get("section_target") or asset.get("purpose") or "Theory").lower()
+        
+        if p and Path(p).exists():
+            try:
+                img_path = Path(p)
+                b64_bytes = img_path.read_bytes()
+                sig = base64.b64encode(b64_bytes[:100]).decode("utf-8")
+                
+                if sig in seen_signatures:
+                    logger.info(f"Skipping duplicate visual asset {img_path.name}")
+                    continue
+                seen_signatures.add(sig)
+                
+                mime_type = "image/svg+xml" if img_path.suffix.lower() == ".svg" else "image/png"
+                data_uri = f"data:{mime_type};base64,{base64.b64encode(b64_bytes).decode('utf-8')}"
+                
+                fig_html = f'<div class="figure"><img src="{data_uri}" alt="{html.escape(caption)}"/><p class="caption">{html.escape(caption)}</p></div>'
+                prepared_figures.append({
+                    "html": fig_html,
+                    "section_target": section_target,
+                    "caption": caption
+                })
+            except Exception as e:
+                logger.warning(f"Failed to process visual asset {p}: {str(e)}")
+
+    if not prepared_figures:
+        return html_content
+
+    # Match heading sections in HTML (e.g. <h2> or <h3> headings)
+    heading_pattern = re.compile(r'(<h[23][^>]*>.*?</h[23]>)', flags=re.IGNORECASE | re.DOTALL)
+    parts = heading_pattern.split(html_content)
+
+    inserted_indices = set()
+    result_parts = []
+    
+    for part in parts:
+        result_parts.append(part)
+        
+        if heading_pattern.match(part):
+            heading_text_lower = re.sub(r'<[^>]+>', '', part).strip().lower()
+            
+            for f_idx, fig in enumerate(prepared_figures):
+                if f_idx in inserted_indices:
+                    continue
+                target = fig["section_target"]
+                
+                target_words = [w for w in re.split(r'\W+', target) if len(w) > 3]
+                is_match = any(word in heading_text_lower for word in target_words)
+                
+                if is_match or ("theory" in target and "theory" in heading_text_lower) or ("intro" in target and "intro" in heading_text_lower):
+                    result_parts.append(f"\n{fig['html']}\n")
+                    inserted_indices.add(f_idx)
+
+    remaining = [fig for idx, fig in enumerate(prepared_figures) if idx not in inserted_indices]
+    if remaining:
+        final_parts = []
+        placed_fallback = False
+        for part in result_parts:
+            final_parts.append(part)
+            if not placed_fallback and heading_pattern.match(part):
+                for fig in remaining:
+                    final_parts.append(f"\n{fig['html']}\n")
+                placed_fallback = True
+        return "".join(final_parts)
+
+    return "".join(result_parts)
+
+
+def generate_single_topic_pdf(
+    request: TopicStudyMaterialRequest,
+    topic_item: TopicRequestItem,
+    raw_markdown: str,
+    output_dir: Path,
+    visual_assets: List[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Compiles study material for ONE specific topic into an independent PDF document:
+      - output/{course_code}/Unit_{unit_number}/{topic_name}.pdf
+    Returns dict containing relative pdf_path and page count.
+    """
+    logger.info(f"Generating single-topic PDF for topic: '{topic_item.topic_name}'...")
+    
+    # 1. Clean markdown & Mermaid blocks
+    cleaned_md = clean_markdown_for_pdf(raw_markdown, topic_name=topic_item.topic_name)
+
+    # 2. Convert Markdown to HTML & place visual assets under matching subtopics
+    md_parser = markdown.Markdown(extensions=['extra', 'codehilite'])
+    raw_html_content = md_parser.convert(cleaned_md)
+    html_content = insert_visuals_into_html(raw_html_content, visual_assets, topic_name=topic_item.topic_name)
+
+    generation_date = datetime.now().strftime("%Y-%m-%d")
+
+    # Cover Page HTML
+    cover_html = f"""
+    <pdf:nexttemplate name="cover_template" />
+    <h1 style="font-size: 0.1pt; color: #0f172a; margin: 0; padding: 0; border: none; page-break-before: avoid; -pdf-outline: true;">Cover Page</h1>
+    <div style="padding: 2.5cm 2cm 2cm 2cm; color: #ffffff;">
+        <div style="margin-top: 2.5cm; border-bottom: 2px solid #0d9488; padding-bottom: 15px;">
+            <p style="font-size: 10pt; color: #38bdf8; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
+                ACADEMIC TOPIC STUDY GUIDE
+            </p>
+            <h1 style="font-size: 26pt; color: #ffffff; margin: 8px 0; font-weight: bold; line-height: 1.2; border: none; page-break-before: avoid; -pdf-outline: false;">
+                {request.subject_name}
+            </h1>
+            <p style="font-size: 13pt; color: #94a3b8; margin-top: 6px;">
+                Course Code: <strong>{request.course_code}</strong>
+            </p>
+        </div>
+        
+        <div style="margin-top: 2cm; background-color: #1e293b; padding: 18px; border-left: 4px solid #0d9488;">
+            <p style="font-size: 13pt; font-weight: bold; color: #38bdf8; margin-bottom: 4px;">
+                Unit {request.unit_number}: {request.unit_title}
+            </p>
+            <p style="font-size: 18pt; font-weight: bold; color: #ffffff; margin-bottom: 8px;">
+                Topic: {topic_item.topic_name}
+            </p>
+            <p style="font-size: 10pt; color: #cbd5e1; margin-top: 6px;">
+                Duration: <strong>{topic_item.duration} Hour(s)</strong>
+            </p>
+        </div>
+        
+        <div style="margin-top: 3cm; font-size: 9pt; color: #94a3b8; line-height: 1.5;">
+            <p>Generation Date: <strong>{generation_date}</strong></p>
+            <p>Topic-Wise Academic Material Engine</p>
+        </div>
+    </div>
+    """
+
+    topic_header_html = f"""
+    <pdf:nexttemplate name="content_template" />
+    <div style="page-break-before: always; border-bottom: 2px solid #0284c7; padding-bottom: 8px; margin-bottom: 15px;">
+        <span style="font-size: 9pt; color: #0369a1; font-weight: bold; text-transform: uppercase;">
+            {request.course_code} - Unit {request.unit_number}: {request.unit_title}
+        </span>
+        <h1 style="font-size: 20pt; color: #0f172a; margin: 4px 0 0 0; font-weight: bold; border: none; page-break-before: avoid; -pdf-outline: true;">
+            Topic: {topic_item.topic_name}
+        </h1>
+    </div>
+    """
+
+    pygments_css = HtmlFormatter(style='friendly').get_style_defs('.codehilite')
+
+    full_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <style>
+        {DOCUMENT_CSS}
+        {pygments_css}
+    </style>
+    </head>
+    <body>
+        <div id="header_content">
+            <table style="width:100%; border:0; margin:0;">
+                <tr>
+                    <td style="border:0; padding:0; text-align:left; color:#64748b; font-size:8.5pt;">
+                        {request.course_code} - {request.subject_name} (Unit {request.unit_number})
+                    </td>
+                    <td style="border:0; padding:0; text-align:right; color:#64748b; font-size:8.5pt;">
+                        Topic: {topic_item.topic_name}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <div id="footer_content">
+            Page <pdf:pagenumber /> of <pdf:pagecount />
+        </div>
+        
+        {cover_html}
+        {topic_header_html}
+        {html_content}
+    </body>
+    </html>
+    """
+
+    # Output file: output/{course_code}/Unit_{unit_number}/{topic_name}.pdf
+    topic_slug = slugify(topic_item.topic_name)
+    pdf_filename = f"{topic_slug}.pdf"
+    pdf_path = output_dir / pdf_filename
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    max_attempts = 2
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with open(pdf_path, "wb") as f:
+                pisa_status = pisa.CreatePDF(full_html, dest=f)
+
+            if pisa_status.err != 0:
+                raise RuntimeError(f"xhtml2pdf compilation returned error status {pisa_status.err}")
+
+            validate_pdf(pdf_path)
+            break
+        except Exception as rendering_error:
+            logger.warning(
+                f"[PDF Rendering Retry Layer] Attempt {attempt}/{max_attempts} failed for topic '{topic_item.topic_name}': "
+                f"{type(rendering_error).__name__}: {str(rendering_error)}. "
+                f"Topic: '{topic_item.topic_name}', Drawing Operation: pisa.CreatePDF, Invalid Parameter: {str(rendering_error)[:120]}. "
+                f"Fallback Action: Sanitizing SVG dash properties and retrying compilation."
+            )
+            if attempt == max_attempts:
+                raise rendering_error
+            # Pre-sanitize full_html by stripping any invalid stroke-dasharray attributes before retrying
+            full_html = re.sub(r'stroke-dasharray=["\'][^"\']*["\']', 'stroke-dasharray="none"', full_html, flags=re.IGNORECASE)
+
+    reader = PdfReader(pdf_path)
+    page_count = len(reader.pages)
+
+    # Relative path from project root for API response
+    try:
+        rel_parts = pdf_path.parts[pdf_path.parts.index("output"):]
+        rel_path = "/".join(rel_parts)
+    except ValueError:
+        rel_path = f"output/{output_dir.name}/{pdf_filename}"
+
+    return {
+        "pdf_path": rel_path,
+        "pages": page_count
+    }
+

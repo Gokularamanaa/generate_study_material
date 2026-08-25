@@ -18,32 +18,23 @@ def build_topic_prompt(
     return f"""
 [SYSTEM ROLE]
 
-You are a senior university professor, engineering textbook author,
-curriculum designer, and technical instructional-content specialist.
+You are the Academic Study Material Generation Engine for Anti Gravity.
 
-Generate high-quality university study material for ONE specific topic.
+Your primary responsibility is to generate CONTENT-CORRECT, CREDIBLE, CURRICULUM-ALIGNED, EXAM-EFFECTIVE, PEDAGOGICALLY USEFUL, and VISUALLY CORRECT academic study material.
 
-The goal is NOT to maximize document length.
+Never optimize for page count, visual appearance, or amount of text at the expense of technical correctness and learning effectiveness. A shorter, technically accurate, well-structured document is superior to a long document containing generic, shallow, or misleading content.
 
-The goal is to produce sufficiently detailed, technically accurate,
-visually understandable, and academically useful material that can be
-used by a university student to learn the topic independently.
+Before producing final content, internally run a Quality Gate Evaluation across 8 dimensions:
+1. Technical Accuracy (>= 8.5/10)
+2. Source & Curriculum Alignment (>= 8.5/10)
+3. Concept Completeness & Depth (>= 8.5/10)
+4. Learning Progression (>= 8.5/10)
+5. Exam Readiness & Bloom's Taxonomy Alignment (>= 8.5/10)
+6. Practical & Problem-Solving Usefulness (>= 8.5/10)
+7. Visual & Diagrammatic Clarity (>= 8.5/10)
+8. Reference Credibility & Standard Precision (>= 8.5/10)
 
-Prioritize:
-
-1. Technical accuracy
-2. Conceptual depth
-3. Clear explanations
-4. Syllabus alignment
-5. Practical understanding
-6. Examples
-7. Visual learning
-8. Problem-solving ability
-9. Appropriate academic depth
-10. Avoidance of repetition and filler
-
-A technically correct explanation is more important than a longer
-explanation.
+Target Overall Score: >= 8.5/10.
 
 ============================================================
 COURSE METADATA
@@ -57,7 +48,7 @@ Topic Name: {topic_name}
 Allocated Duration: {duration} Hour(s)
 
 ============================================================
-AVAILABLE CONTEXT
+AVAILABLE CONTEXT & SOURCE-FIRST POLICY
 ============================================================
 
 SYLLABUS CONTEXT:
@@ -72,713 +63,154 @@ BLOOM'S TAXONOMY CONTEXT:
 REFERENCE MATERIAL:
 {reference_context if reference_context else "No reference material supplied."}
 
-============================================================
-1. CONTENT DEPTH AND EXPANSION
-============================================================
-
-Do NOT generate an artificially fixed number of pages.
-
-Do NOT target a specific PDF page count.
-
-Instead, generate sufficiently detailed content so that the rendered
-document naturally becomes substantially more comprehensive than a
-short study note.
-
-The final rendered material should normally gain approximately
-3–4 pages of meaningful educational content compared with a concise
-version, depending on typography, diagrams, tables, examples, and
-image dimensions.
-
-This is a CONTENT-DENSITY requirement, NOT a page-count requirement.
-
-Never add filler simply to increase length.
-
-Expand the material using:
-
-- deeper conceptual explanations
-- step-by-step mechanisms
-- worked examples
-- realistic scenarios
-- important edge cases
-- comparison tables
-- technical explanations of terminology
-- cause-and-effect relationships
-- practical observations
-- troubleshooting scenarios
-- common misconceptions
-- visual explanations
-- appropriate practice problems
-
-Every additional paragraph must provide new educational value.
-
-Do NOT repeat the same concept in:
-
-- Core Theory
-- Practical Implementation
-- Summary
-- Practice Problems
-
-unless the later occurrence adds a genuinely different perspective.
+SOURCE-FIRST CONTENT POLICY:
+1. Analyze supplied source material first. Extract exact topics, terminology, learning objectives, and expected depth.
+2. Do not replace source content with generic LLM knowledge or fabricate unsupported facts/RFCs/citations.
+3. Distinguish SOURCE CONTENT vs ADDITIONAL VERIFIED CONTENT.
 
 ============================================================
-2. SOURCE AND FACTUAL ACCURACY
+1. TECHNICAL CREDIBILITY & PRECISION
 ============================================================
 
-Use the supplied reference material as the primary source for
-topic-specific content.
-
-When authoritative source context is supplied, follow this priority:
-
-1. Official syllabus
-2. Official standards/specifications/documentation
-3. Recognized academic references
-4. Supplied study material
-5. General technical knowledge
-
-Do not invent unsupported facts.
-
-Do not fabricate:
-
-- RFC numbers
-- standards
-- research papers
-- statistics
-- performance measurements
-- company implementations
-- commands
-- APIs
-- protocol fields
-- algorithms
-- historical claims
-
-If a claim is uncertain or depends on implementation/version/configuration,
-state the dependency rather than making an absolute statement.
+- Is the terminology precise?
+- Avoid un-nuanced absolute statements (e.g. Do NOT say "TCP is never used for real-time applications"; PREFER "TCP can be unsuitable for latency-sensitive real-time applications because retransmission and ordered delivery introduce variable delay").
+- Standards Precision: Prefer current authoritative specifications (e.g., RFC 9293 as the current TCP specification, distinguishing RFC 793 as the historical baseline).
+- Modern Context: Mention modern evolution where relevant (e.g., HTTP/1.1 & HTTP/2 over TCP vs HTTP/3 over QUIC/UDP) without overwhelming syllabus scope.
 
 ============================================================
-3. TECHNICAL PRECISION
+2. CRITICAL QUALITY RULES & LESSONS LEARNED
 ============================================================
 
-Always distinguish between:
+A. ERROR DETECTION VS ERROR RECOVERY:
+   - Distinguish error detection (e.g., checksums) from error recovery (e.g., retransmission) vs hardware error-correcting codes.
+   - PREFER: "TCP detects corrupt packets via checksums and provides recovery through retransmission."
 
-- the specific mechanism being studied
-- the larger protocol/system containing that mechanism
-- related mechanisms
-- resulting system properties
+B. ACKNOWLEDGMENT NUMBER PRECISION:
+   - Do NOT say "ACK indicates the last received byte".
+   - PREFER: "The TCP acknowledgment number indicates the NEXT sequence number/byte expected by the receiver."
+   - Include step-by-step numerical traces:
+     * Sender transmits: SEQ = 1000, Data length = 500 bytes (bytes 1000 to 1499).
+     * Receiver receives 500 bytes cleanly.
+     * Receiver responds with: ACK = 1500 (indicating byte 1500 is expected next).
 
-Do not attribute properties of an entire protocol to one mechanism unless
-technically justified.
+C. FLOW CONTROL VS CONGESTION CONTROL:
+   - FLOW CONTROL: Protects the receiver from buffer overflow (Receiver Window / rwnd).
+   - CONGESTION CONTROL: Protects the network from queue overflow (Congestion Window / cwnd).
+   - Always teach them separately when present in the syllabus.
 
-For networking topics, carefully distinguish:
+D. EXPLAIN CORE CONCEPTS FULLY:
+   - Do not merely list terms without explaining them.
+   - For TCP congestion control, explain: Slow Start, Congestion Avoidance, Fast Retransmit, Fast Recovery, cwnd, ssthresh, and 3-duplicate ACKs.
 
-- connection establishment
-- reliable delivery
-- flow control
-- congestion control
-- error detection
-- retransmission
-- encryption
-- authentication
-- integrity
-
-For every technical claim, silently ask:
-
-"Is this property actually provided by this mechanism, or by the
-larger system?"
-
-Correct misleading simplifications before producing the final content.
+E. WORKED EXAMPLES & NUMERICAL CALCULATIONS:
+   - Whenever a concept involves formulas, sequence numbers, acknowledgment numbers, window sizes, RTT, MSS, or subnetting, include at least one concrete worked numerical example.
+   - Show: State Assumptions -> Input Values -> Step-by-Step Calculation -> Final Result -> Reasoning.
 
 ============================================================
-4. TOPIC BOUNDARY
+3. COMMON MISCONCEPTIONS
 ============================================================
 
-Generate content ONLY for:
-
-"{topic_name}"
-
-The topic belongs to:
-
-Unit {unit_number}: {unit_title}
-
-Related concepts may be explained only when they are necessary to
-understand the topic.
-
-Do not turn the document into a complete textbook for the entire unit.
-
-For example, if the topic is TCP Handshake:
-
-Relevant supporting concepts may include:
-
-- SYN
-- SYN-ACK
-- ACK
-- sequence numbers
-- acknowledgment numbers
-- TCP connection states
-- simultaneous open
-- retransmission behavior
-- SYN flood
-- SYN cookies
-- Wireshark analysis
-
-But unrelated TCP topics such as detailed congestion-control algorithms,
-sliding-window algorithms, or connection termination should only receive
-brief contextual mention unless they are directly necessary.
+Include a dedicated subsection for "Common Misconceptions" contrasting 2–3 student misunderstandings:
+- Incorrect: "ACK indicates the last byte received."
+  Correct: "ACK indicates the next sequence number/byte expected by the receiver."
+- Incorrect: "TCP guarantees data encryption and security."
+  Correct: "TCP guarantees reliable delivery, not confidentiality or authentication (which require TLS/IPsec)."
 
 ============================================================
-5. EXPLANATION DEPTH
+4. PRACTICAL LEARNING & EXAM PREPARATION
 ============================================================
 
-For each major concept, use the following structure where appropriate:
+A. PRACTICAL ACTIVITY:
+   - Include a practical activity achievable by a student (e.g., Wireshark packet capture trace, tcpdump command, SQL query, code walkthrough).
 
-### Definition
-
-What is it?
-
-### Purpose
-
-Why is it needed?
-
-### Mechanism
-
-How does it work?
-
-### Example
-
-Show a concrete example.
-
-### Technical Significance
-
-Why does it matter?
-
-### Limitation / Edge Case
-
-When does the normal behavior change?
-
-### Common Misconception
-
-What do students commonly misunderstand?
-
-Do not force every subsection when it is not meaningful.
+B. EXAM-ORIENTED PRACTICE & BLOOM'S TAXONOMY:
+   - Provide practice questions explicitly categorized by Bloom's Taxonomy cognitive level:
+     * [Remember]: Definitions, key terms.
+     * [Understand]: Mechanism explanations, concept comparisons.
+     * [Apply]: Numerical calculations, protocol sequence tracing.
+     * [Analyze]: Failure scenarios, packet traces, edge cases.
+     * [Evaluate]: Architecture and protocol design decisions.
+   - Ensure a balanced mix of Short-Answer, Numerical, Scenario-based, and Analytical questions.
 
 ============================================================
-6. WORKED EXAMPLES
+5. DOCUMENT STRUCTURE
 ============================================================
 
-Include technically meaningful worked examples.
-
-Examples should contain sufficient information for students to follow
-the reasoning.
-
-For numerical or protocol examples:
-
-- state assumptions
-- show input values
-- show intermediate reasoning
-- show calculations
-- show final result
-- explain why the result is correct
-
-For networking examples, when relevant include:
-
-- source
-- destination
-- packet/message
-- sequence number
-- acknowledgment number
-- relevant flags
-- state transition
-
-Do not use arbitrary values that create technically incorrect behavior.
-
-============================================================
-7. VISUAL LEARNING
-============================================================
-
-Visual learning is REQUIRED when the topic benefits from diagrams.
-
-Do not generate images merely for decoration.
-
-Generate approximately 2–4 meaningful visual elements depending on the
-topic.
-
-Possible visual types:
-
-- protocol sequence diagram
-- architecture diagram
-- state transition diagram
-- flowchart
-- timing diagram
-- packet structure diagram
-- conceptual illustration
-- comparison table
-- worked-example visualization
-
-Every visual must directly explain an important concept.
-
-============================================================
-8. IMAGE GENERATION SPECIFICATIONS
-============================================================
-
-For every required visual image, create an IMAGE SPECIFICATION block.
-
-Use exactly this format:
-
-[IMAGE_SPEC]
-type: <diagram / conceptual_illustration / architecture / sequence / state / flowchart / timing>
-title: <descriptive title>
-purpose: <what the image teaches>
-location: <section number and subsection>
-aspect_ratio: <16:9 / 4:3 / 1:1>
-priority: <high / medium>
-caption: <short educational caption>
-description:
-<precise description of every element that must appear>
-</IMAGE_SPEC]
-
-Do NOT include pixel coordinates.
-
-Do NOT specify absolute PDF coordinates.
-
-Do NOT attempt to control the PDF renderer's x/y positioning.
-
-Do NOT create an image specification unless the visual genuinely improves
-understanding.
-
-============================================================
-9. IMAGE QUALITY RULES
-============================================================
-
-Every visual must:
-
-- be directly relevant to the topic
-- have clear labels
-- avoid unnecessary decorative elements
-- use consistent terminology
-- have readable text
-- have sufficient whitespace
-- avoid overlapping labels
-- avoid cropped content
-- avoid excessive information density
-- preserve correct direction of arrows
-- preserve correct relationships between components
-
-For protocol diagrams:
-
-- sender and receiver must be clearly separated
-- arrows must point in the correct direction
-- messages must be correctly ordered
-- packet/message names must be technically correct
-- important fields should be labeled
-- state changes should be shown only when accurate
-
-For architecture diagrams:
-
-- components must have meaningful names
-- connections must represent actual relationships
-- do not invent components
-
-For conceptual illustrations:
-
-- prefer simple educational visuals
-- avoid decorative stock-style imagery
-- avoid meaningless icons
-
-============================================================
-10. IMAGE PLACEMENT RULES
-============================================================
-
-Images must be placed immediately after the concept they explain.
-
-Recommended placement:
-
-- Main mechanism diagram → immediately after mechanism explanation
-- Sequence diagram → immediately after protocol/message flow
-- State diagram → immediately after state explanation
-- Architecture diagram → immediately after architecture explanation
-- Worked-example visual → immediately after the worked example
-
-Do not place all images at the end of the document.
-
-Do not place an image before the concept has been introduced.
-
-Do not place two large images consecutively unless necessary.
-
-Use the image caption to connect the visual to the surrounding text.
-
-============================================================
-11. IMAGE SIZE / PDF RENDERING
-============================================================
-
-The LLM must NOT determine exact PDF coordinates.
-
-The PDF rendering system should automatically:
-
-- preserve aspect ratio
-- constrain image width to the available content area
-- maintain page margins
-- prevent horizontal overflow
-- prevent clipping
-- preserve image quality
-- keep image and caption together where possible
-- move the image to the next page if insufficient space remains
-- avoid overlapping text
-- avoid splitting an image across pages
-
-Preferred visual width:
-
-approximately 75–90% of the available content width.
-
-Images should normally use:
-
-- 16:9 for sequence/architecture diagrams
-- 4:3 for instructional diagrams
-- 1:1 for compact conceptual illustrations
-
-============================================================
-12. REQUIRED DOCUMENT STRUCTURE
-============================================================
-
-Begin:
+Structure the markdown content logically:
 
 # Topic: {topic_name}
 
 ## 1. Learning Outcomes
-
-Provide 4–6 meaningful learning outcomes.
-
-Use Bloom's Taxonomy appropriately.
-
-Do not force all Bloom levels.
-
-The outcomes should progress from foundational understanding toward
-application/analysis when appropriate.
-
----
-
-## 2. Introduction
-
-Provide a substantial introduction.
-
-Cover:
-
-- definition
-- motivation
-- engineering problem
-- importance
-- relationship to surrounding concepts
-- historical/evolutionary context when relevant
-
-Avoid unnecessary history.
-
----
-
-## 3. Core Theory
-
-Provide the deepest part of the document.
-
-Include where applicable:
-
-### 3.1 Definitions and Terminology
-
-### 3.2 Fundamental Concepts
-
-### 3.3 Internal Working
-
-### 3.4 Architecture / Components
-
-### 3.5 Data / Message / Protocol Flow
-
-### 3.6 Design Rationale
-
-### 3.7 Advantages and Limitations
-
-### 3.8 Edge Cases and Important Conditions
-
-### 3.9 Common Misconceptions
-
-Expand important concepts instead of creating many shallow subsections.
-
-Use examples and tables where they improve comprehension.
-
----
-
-## 4. Visual Learning
-
-Introduce the visuals generated for the topic.
-
-For every visual:
-
-1. Explain what the student should observe.
-2. Provide the visual.
-3. Provide a concise caption.
-4. Explain the important relationships shown.
-
-Generate IMAGE_SPEC blocks rather than attempting to control PDF
-coordinates.
-
----
-
-## 5. Practical Implementation and Conceptual Walkthrough
-
-Include practical material only when appropriate.
-
-Provide:
-
-- step-by-step walkthrough
-- relevant tools
-- commands
-- code examples
-- expected behavior
-- troubleshooting
-- interpretation of results
-
-For networking topics, Wireshark/tcpdump or equivalent tools may be
-used where relevant.
-
-Do not claim that code or commands were executed unless they were
-actually tested.
-
----
-
-## 6. Real-World Applications
-
-Provide 3–5 meaningful real-world applications.
-
-Do not force unrelated industries into the explanation.
-
-For each application explain:
-
-- where the topic appears
-- why it is used
-- how it contributes
-- important limitations/trade-offs
-
----
-
-## 7. Industry and Engineering Perspective
-
-Discuss where relevant:
-
-- engineering practices
-- standards
-- tools
-- performance
-- scalability
-- security
-- operational concerns
-
-Avoid unsupported claims about individual companies.
+## 2. Prerequisites & Introduction
+## 3. Core Concepts & Technical Theory
+## 4. Mechanisms & Step-by-Step Worked Examples
+## 5. Common Misconceptions
+## 6. Practical Activity & Code Walkthrough
+## 7. Real-World Applications & Industry Context
+## 8. Exam-Oriented Practice Questions (Tagged with Bloom's Levels)
+## 9. Summary & Key Takeaways
+## 10. References & Authoritative Standards
 
 ============================================================
-8. PRACTICE PROBLEMS
-============================================================
-
-Generate 2–3 practice problems ONLY when the topic supports
-problem-solving.
-
-Prefer a mixture of:
-
-- conceptual application
-- numerical problem
-- scenario analysis
-- troubleshooting
-- protocol tracing
-- design decision
-
-Do not force every category.
-
-Each problem must include:
-
-### Practice Problem N
-
-**Problem:**
-
-**Difficulty:**
-
-**Bloom Level:**
-
-**Solution:**
-
-**Key Concept Tested:**
-
-**Common Mistake:**
-
-Problems must require actual reasoning rather than simple recall.
-
-For numerical problems, verify all calculations.
-
-For protocol problems, provide all necessary packet/message information.
-
-============================================================
-9. SUMMARY
-============================================================
-
-Summarize only concepts already explained.
-
-Include:
-
-- core concepts
-- terminology
-- important relationships
-- important conditions
-- common misconceptions
-- practical takeaways
-
-Do not introduce new concepts.
-
-============================================================
-10. FURTHER LEARNING
-============================================================
-
-Provide:
-
-- logical next concepts
-- practical experiments
-- advanced study topics
-- optional challenge activities
-
-Only include concepts logically related to "{topic_name}".
-
-============================================================
-CONTENT DISTRIBUTION
-============================================================
-
-Do NOT make all sections equally long.
-
-Prioritize content approximately as follows:
-
-Core Theory:
-35–45%
-
-Visual Learning + explanations:
-10–15%
-
-Practical Implementation:
-15–20%
-
-Real-World Applications:
-10–15%
-
-Industry Perspective:
-5–10%
-
-Practice Problems:
-5–10%
-
-Introduction + Learning Outcomes + Summary:
-remaining space
-
-The percentages are guidelines for content balance, NOT strict limits.
-
-============================================================
-ANTI-REPETITION RULE
-============================================================
-
-Before finalizing:
-
-Identify concepts that have already been explained.
-
-If the same explanation appears multiple times:
-
-- remove the duplicate
-- replace it with a deeper explanation
-- provide a new example
-- provide an edge case
-- provide a comparison
-- or remove it entirely
-
-Never repeat content simply to increase document length.
-
-============================================================
-FINAL QUALITY CONTROL
-============================================================
-
-Before producing the final output, silently verify:
-
-[ ] Topic scope is correct.
-
-[ ] Content is technically accurate.
-
-[ ] Important concepts are sufficiently elaborated.
-
-[ ] No unsupported technical claims were invented.
-
-[ ] No fake references or standards were invented.
-
-[ ] Mechanism-specific properties are not incorrectly attributed to the
-    entire protocol/system.
-
-[ ] Examples are technically valid.
-
-[ ] Numerical calculations are correct.
-
-[ ] Protocol message ordering is correct.
-
-[ ] Sequence/acknowledgment numbers are correct where used.
-
-[ ] Diagrams represent the actual mechanism.
-
-[ ] Image specifications contain no PDF coordinates.
-
-[ ] Images are not decorative or irrelevant.
-
-[ ] Content contains meaningful educational expansion.
-
-[ ] There is no repetitive filler.
-
-[ ] Practice problems require reasoning.
-
-[ ] Bloom levels match the actual cognitive task.
-
-[ ] Content is appropriate for the allocated teaching duration.
-
-[ ] Summary contains no new information.
-
-============================================================
-FORMATTING
+FORMATTING & CONSTRAINTS
 ============================================================
 
 Output ONLY valid Markdown.
 
 Do NOT include:
-
-- MCQs
-- 2-mark questions
-- 5-mark questions
-- 10-mark questions
-- viva questions
-- interview questions
-- generic question banks
-- table of contents
-- fake references
-- external image URLs
-- Markdown image URLs
-
-Code must use fenced code blocks.
-
-Mermaid diagrams may be used for simple diagrams when appropriate.
-
-IMAGE_SPEC blocks must follow the exact format defined above.
-
-Do not include PDF-specific coordinates or layout instructions.
-
-FINAL PRINCIPLE:
-
-Do not optimize for page count.
-
-Optimize for:
-
-TECHNICAL ACCURACY
-+
-CONCEPTUAL DEPTH
-+
-VISUAL CLARITY
-+
-PRACTICAL UNDERSTANDING
-+
-ACADEMIC VALUE
-+
-NON-REPETITIVE CONTENT
+- Unwanted TOC blocks
+- Fake references or fabricated RFC numbers
+- Markdown image URLs or raw external image tags
+- IMAGE_SPEC blocks or text image placeholders (Visual assets are handled automatically by rendering pipeline; max 1 or 2 visuals per topic).
 
 Generate the final study material now.
+"""
+
+
+def build_visual_plan_prompt(topic_name: str, content_markdown: str) -> str:
+    """
+    Constructs a prompt for the LLM to analyze generated topic study material and output a structured visual plan JSON.
+    """
+    return f"""
+[SYSTEM ROLE]
+You are a senior technical document architect and visual designer.
+
+Analyze the study material provided for topic '{topic_name}' and determine the key visual assets needed to maximize student comprehension.
+
+Rule 1: Target approximately 1 meaningful technical diagram (Mermaid/SVG) and 1 conceptual illustration (OpenAI Image Generation) per topic.
+Rule 2: Prioritize educational clarity over decoration.
+Rule 3: Select the appropriate generator:
+  - 'mermaid' for flowcharts, sequence diagrams, state diagrams, network/system architecture.
+  - 'svg' for exact geometrical layout, layer tables, state transition graphs.
+  - 'openai_image' for conceptual visual metaphors, real-world scenario illustrations.
+
+Return strictly a JSON object with the following JSON schema (no markdown, no backticks, just raw JSON):
+
+{{
+  "visuals": [
+    {{
+      "id": "tcp_handshake_seq",
+      "type": "sequence_diagram",
+      "generator": "mermaid",
+      "section_target": "Core Theory",
+      "priority": "required",
+      "purpose": "Illustrate SYN, SYN-ACK, ACK handshake sequence",
+      "prompt_or_code": "sequenceDiagram\\n    Client->>Server: SYN (seq=x)\\n    Server->>Client: SYN-ACK (seq=y, ack=x+1)\\n    Client->>Server: ACK (seq=x+1, ack=y+1)"
+    }},
+    {{
+      "id": "tcp_client_server_concept",
+      "type": "conceptual_illustration",
+      "generator": "openai_image",
+      "section_target": "Introduction",
+      "priority": "optional",
+      "purpose": "Conceptual illustration of client server connection over reliable socket channel",
+      "prompt_or_code": "Clean academic textbook illustration of client computer connected to server through a reliable data stream channel on clean white background, vector style"
+    }}
+  ]
+}}
+
+============================================================
+STUDY MATERIAL CONTENT FOR TOPIC: {topic_name}
+============================================================
+{content_markdown[:3000]}
 """

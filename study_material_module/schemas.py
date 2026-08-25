@@ -18,9 +18,11 @@ class TopicResultItem(BaseModel):
     topic_name: str = Field(..., description="The name of the topic")
     status: str = Field("success", description="Status of topic generation ('success' or 'failed')")
     reason: Optional[str] = Field(None, description="Reason for failure if status is failed")
+    pdf_path: Optional[str] = Field(None, description="Path to the individual topic PDF document")
 
 class TopicStudyMaterialResponse(BaseModel):
     success: bool = Field(..., description="Overall status of the request")
+    completion_status: Optional[str] = Field(None, description="Detailed completion status text, e.g. 'Partially Completed — X/Y topics generated'")
     subject_name: str = Field(..., description="The subject name")
     course_code: str = Field(..., description="The course code")
     unit_number: int = Field(..., description="The unit number")

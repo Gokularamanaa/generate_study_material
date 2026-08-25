@@ -352,42 +352,43 @@ export default function App() {
 
                 <div className="topic-result-list">
                   {generationResult.topic_results?.map((tr, idx) => (
-                    <div key={idx} className={`topic-result-item ${tr.status === 'success' ? 'success' : 'failed'}`}>
-                      <div>
-                        <strong>{tr.topic_name}</strong>
-                        {tr.reason && <div style={{ fontSize: '0.75rem', color: 'var(--error)' }}>{tr.reason}</div>}
+                    <div key={idx} className={`topic-result-item ${tr.status === 'success' ? 'success' : 'failed'}`} style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ fontSize: '1rem', color: 'var(--text-main)' }}>Topic {idx + 1}: {tr.topic_name}</strong>
+                          {tr.reason && <div style={{ fontSize: '0.75rem', color: 'var(--error)', marginTop: '2px' }}>{tr.reason}</div>}
+                        </div>
+                        <span className={`status-badge ${tr.status === 'success' ? 'success' : 'failed'}`}>
+                          {tr.status === 'success' ? '✓ PDF Ready' : '✗ Failed'}
+                        </span>
                       </div>
-                      <span className={`status-badge ${tr.status === 'success' ? 'success' : 'failed'}`}>
-                        {tr.status === 'success' ? '✓ Generated' : '✗ Failed'}
-                      </span>
+
+                      {tr.status === 'success' && tr.pdf_path && (
+                        <div className="pdf-action-row" style={{ marginTop: '4px', paddingTop: '8px', borderTop: '1px stroke var(--border-color, #e2e8f0)' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Path: <code>{tr.pdf_path}</code></span>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <a
+                              href={getPdfUrl(tr.pdf_path)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-primary btn-sm"
+                              download
+                            >
+                              ⬇️ Download Topic PDF
+                            </a>
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => copyPath(tr.pdf_path)}
+                            >
+                              📋 Copy Path
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-
-                {generationResult.pdf_path && (
-                  <div className="pdf-download-box">
-                    <h4>📄 PDF Document Ready</h4>
-                    <p>Path: <code>{generationResult.pdf_path}</code></p>
-                    <div className="pdf-action-row">
-                      <a
-                        href={getPdfUrl(generationResult.pdf_path)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-primary"
-                        download
-                      >
-                        ⬇️ Download PDF
-                      </a>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => copyPath(generationResult.pdf_path)}
-                      >
-                        📋 Copy Path
-                      </button>
-                    </div>
-                  </div>
-                )}
               </>
             )}
 
